@@ -36,9 +36,8 @@ __docformat__ = 'restructuredtext'
 
 __all__ = [
     # library loading
-    'load_lib',
     'load_blockstream',
-    # protocoll classes
+    # protocol classes
     'BS3Error',
     'BS3BaseHeader',
     'BS3DataBlockHeader'
@@ -48,8 +47,8 @@ __all__ = [
 ##---IMPORTS
 
 from ctypes import CDLL
-from ctypes.util import find_library
 import os
+import sys
 from struct import pack, unpack, calcsize
 import platform
 
@@ -63,22 +62,15 @@ if platform.system() == 'Windows':
 
 ##---FUNCTIONS
 
-def load_lib(libname, verbose=False):
+def load_blockstream(verbose=False):
+    """load tzhe shared library so its available"""
 
+    target = os.path.join(os.path.dirname(__file__), LIBNAME)
+    rval = CDLL(target)
     if verbose:
-        print 'libname:', libname
-        print 'find_library("%s"):' % libname, find_library(libname)
-    target_dir = os.path.dirname(__file__)
-    if os.getcwd() != target_dir:
-        os.chdir(target_dir)
-    rval = CDLL(find_library(LIBNAME))
-    if verbose:
+        print 'looking up:', target
         print rval
     return rval
-
-def load_blockstream_lib(verbose=False):
-
-    return load_lib(LIBNAME, verbose=verbose)
 
 
 ##---CLASSES
@@ -175,3 +167,9 @@ class BS3DataBlockHeader(BS3BaseHeader):
         if ver != BS3DataBlockHeader.version or tcd != 1:
             raise ValueError('invalid protocol version(%s) or blocktype(%s)!' % (ver, tcd))
         return BS3DataBlockHeader(bsz, wid, bix, tsp, bcd)
+
+
+##---MAIN
+
+if __name__ == '__main__':
+    pass

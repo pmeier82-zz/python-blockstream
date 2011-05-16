@@ -1,4 +1,7 @@
 from blockstream import *
+from p_bxpd import *
+from p_sort import *
+from bxpd_reader import *
 import scipy as sp
 import time
 from Queue import Queue
@@ -15,7 +18,7 @@ BLOCK_LEN = len(BLOCK_BYTES)
 
 if __name__ == '__main__':
 
-    LIB = load_blockstream_lib(True)
+    LIB = load_blockstream(True)
     LIB.init()
     WID = LIB.startWriter('pyTestSortWriter')
     PREAMBLE = BS3SortSetupBlock(BS3SortBlockHeader(0),
@@ -27,7 +30,7 @@ if __name__ == '__main__':
     import time
 
     try:
-        bs_reader = BS3Reader(verbose=False)
+        bs_reader = BS3BxpdReader(verbose=False)
         bs_reader.start()
 
         Q = Queue()

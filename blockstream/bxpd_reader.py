@@ -44,7 +44,7 @@ __all__ = [
 from ctypes import byref, c_int64, c_char, POINTER
 from threading import Thread, Event
 from Queue import Queue
-from blockstream import load_blockstream_lib, BS3Error, BS3DataBlockHeader
+from blockstream import load_blockstream, BS3Error, BS3DataBlockHeader
 from p_bxpd import *
 
 
@@ -91,7 +91,7 @@ class BS3BxpdReader(Thread):
         """initialises the blockstream library for reading"""
 
         self.stop_blockstream()
-        self._blkstr = load_blockstream_lib()
+        self._blkstr = load_blockstream()
         self._blkstr.init()
         self._reader_id = self._blkstr.startReader(self.name)
 

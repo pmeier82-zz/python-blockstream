@@ -8,6 +8,7 @@
 # 2011-05-10
 #
 
+
 ##---IMPORTS
 
 import ez_setup
@@ -42,7 +43,7 @@ protocol lives in layer 5 and 6 of the OSI network model.
 
 setup(
     # names and description
-    name='',
+    name='Blockstream',
     version='0.1',
     author='Philipp Meier',
     author_email='pmeier82@googlemail.com',
@@ -52,7 +53,7 @@ setup(
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
     # package distribution
-    packages=find_packages(exclude=['*_test*', 'test_*', 'tests.*', 'tests']),
+    packages=['blockstream'],
     package_data={'res':['*.*']},
     zip_safe=False,
     include_package_data=True,
@@ -61,4 +62,3 @@ setup(
     platforms=['any'],
     install_requires=[],
 )
-

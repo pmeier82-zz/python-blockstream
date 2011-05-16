@@ -35,6 +35,9 @@ __docformat__ = 'restructuredtext'
 ##---PACKAGE
 
 from blockstream import *
+from bxpd_reader import *
+from p_bxpd import *
+from p_sort import *
 
 
 ##---MAIN
