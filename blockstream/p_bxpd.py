@@ -36,6 +36,10 @@ __docformat__ = 'restructuredtext'
 
 __all__ = [
     # protocoll classes
+    'BS3BxpdBlockHeader',
+    'BS3BxpdBaseBlock',
+    'BS3BxpdSetupBlock',
+    'BS3BxpdDataBlock',
 ]
 
 
