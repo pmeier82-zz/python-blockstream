@@ -28,14 +28,14 @@
 #______________________________________________________________________________
 #
 
-"""test dll loading and ctype stuff"""
+"""protocol for the sorting results with respect to the bxpd protocol"""
 __docformat__ = 'restructuredtext'
 
 
 ##---ALL
 
 __all__ = [
-    # protocoll classes
+    # protocol classes
     'BS3SortBlockHeader',
     'BS3SortBaseBlock',
     'BS3SortSetupBlock',
@@ -47,7 +47,7 @@ __all__ = [
 
 from struct import pack, unpack, calcsize
 import scipy as sp
-from blockstream import BS3BaseHeader
+from blockstream import BS3BaseHeader, BS3BaseBlock
 
 
 ##---CLASSES
@@ -87,20 +87,10 @@ class BS3SortBlockHeader(BS3BaseHeader):
         return BS3SortBlockHeader(btp)
 
 
-class BS3SortBaseBlock(object):
+class BS3SortBaseBlock(BS3BaseBlock):
     """"Sort data block"""
 
     BLOCK_CODE = 'SORT'
-
-    def __init__(self, sort_h):
-        """
-        :Parameters:
-        """
-
-        self.sort_h = sort_h
-
-    def __str__(self):
-        return '::%s' % self.sort_h
 
 
 class BS3SortSetupBlock(BS3SortBaseBlock):
@@ -108,12 +98,12 @@ class BS3SortSetupBlock(BS3SortBaseBlock):
 
     def __init__(self,
                  # header
-                 sort_h,
+                 header,
                  # setupblock stuff
                  group_lst):
         """
         :Paramters:
-            sort_h : BS3SortBlockHeader
+            header : BS3SortBlockHeader
             
             group_lst : list
                 list of group specs. entry:
@@ -132,14 +122,14 @@ class BS3SortSetupBlock(BS3SortBaseBlock):
         """
 
         # super
-        super(BS3SortSetupBlock, self).__init__(sort_h)
+        super(BS3SortSetupBlock, self).__init__(header)
 
         # members
         self.group_lst = list(group_lst)
 
     def payload(self):
         rval = ''
-        rval += self.sort_h.payload()
+        rval += self.header.payload()
         rval += pack('<H', len(self.group_lst))
         for group in self.group_lst:
             grp_idx, nc, tf, cl = group[:4]
@@ -160,7 +150,7 @@ class BS3SortSetupBlock(BS3SortBaseBlock):
         return '%s::[gr:%d]' % (super_str, len(self.group_lst))
 
     @staticmethod
-    def from_data(blk_h, sort_h, data):
+    def from_data(header, data):
         """build from data"""
 
         if not isinstance(data, str):
@@ -169,8 +159,8 @@ class BS3SortSetupBlock(BS3SortBaseBlock):
 
         # groups
         group_lst = []
-        ngroup, = unpack('<H', data[at:at + 1])
-        at += 1
+        ngroup, = unpack('<H', data[at:at + 2])
+        at += 2
         if ngroup > 0:
             for _ in xrange(ngroup):
                 grp_idx, nc, tf, cl = unpack('<HHHH', data[at:at + 8])
@@ -195,7 +185,7 @@ class BS3SortSetupBlock(BS3SortBaseBlock):
                         at += 8
                         unit_lst.append((filt, temp, snr, u1, u2))
                 group_lst.append((grp_idx, nc, tf, cl, cov, unit_lst))
-        return BS3SortSetupBlock(sort_h, group_lst)
+        return BS3SortSetupBlock(header, group_lst)
 
 
 class BS3SortDataBlock(BS3SortBaseBlock):
@@ -203,12 +193,12 @@ class BS3SortDataBlock(BS3SortBaseBlock):
 
     def __init__(self,
                  # header
-                 sort_h,
+                 header,
                  # datablock stuff
                  event_lst):
         """
         :Paramters:
-            sort_h : BS3SortBlockHeader
+            header : BS3SortBlockHeader
         
             event_lst : list
                 list of event channel chunks. entry:
@@ -221,14 +211,14 @@ class BS3SortDataBlock(BS3SortBaseBlock):
         """
 
         # super
-        super(BS3SortDataBlock, self).__init__(sort_h)
+        super(BS3SortDataBlock, self).__init__(header)
 
         # members
         self.event_lst = list(event_lst)
 
     def payload(self):
         rval = ''
-        rval += self.sort_h.payload()
+        rval += self.header.payload()
         rval += pack('<I', len(self.event_lst))
         if len(self.event_lst) > 0:
             for ev in self.event_lst:
@@ -243,7 +233,7 @@ class BS3SortDataBlock(BS3SortBaseBlock):
         return '%s::[ev:%d]' % (super_str, len(self.event_lst))
 
     @staticmethod
-    def from_data(sort_h, data):
+    def from_data(header, data):
         """build from data"""
 
         if not isinstance(data, str):
@@ -259,8 +249,17 @@ class BS3SortDataBlock(BS3SortBaseBlock):
                 ev = unpack('<HHQHHH', data[at:at + 18])
                 at += 18
                 event_lst.append(ev)
-        return BS3SortDataBlock(sort_h, event_lst)
+        return BS3SortDataBlock(header, event_lst)
 
+
+##---PROTOCOL
+
+PROT = {
+    'H' : BS3SortBlockHeader,
+    'B' : BS3SortBaseBlock,
+    0 : BS3SortSetupBlock,
+    1 : BS3SortDataBlock,
+}
 
 ##---MAIN
 

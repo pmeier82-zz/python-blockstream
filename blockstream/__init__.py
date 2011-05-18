@@ -28,15 +28,16 @@
 #______________________________________________________________________________
 #
 
-"""blockstream protocol package for the NMDAQv3 software"""
+"""blockstream package for the NMDAQv3 software"""
 __docformat__ = 'restructuredtext'
 
 
 ##---PACKAGE
 
 from blockstream import *
-from bxpd_reader import *
+from bs_reader import *
 from p_bxpd import *
+from p_posi import *
 from p_sort import *
 
 

@@ -28,14 +28,14 @@
 #______________________________________________________________________________
 #
 
-"""test dll loading and ctype stuff"""
+"""protocol for the data of tetrodes"""
 __docformat__ = 'restructuredtext'
 
 
 ##---ALL
 
 __all__ = [
-    # protocoll classes
+    # protocol classes
     'BS3BxpdBlockHeader',
     'BS3BxpdBaseBlock',
     'BS3BxpdSetupBlock',
@@ -48,10 +48,10 @@ __all__ = [
 import os
 from struct import pack, unpack, calcsize
 import scipy as sp
-from blockstream import BS3BaseHeader
+from blockstream import BS3BaseHeader, BS3BaseBlock
 
 
-##---CALSSES
+##---CLASSES
 
 class BS3BxpdBlockHeader(BS3BaseHeader):
     """header for a datablock of type BXPD from the blockstream protocol"""
@@ -88,20 +88,10 @@ class BS3BxpdBlockHeader(BS3BaseHeader):
         return BS3BxpdBlockHeader(btp)
 
 
-class BS3BxpdBaseBlock(object):
+class BS3BxpdBaseBlock(BS3BaseBlock):
     """"BXPD data block"""
 
     BLOCK_CODE = 'BXPD'
-
-    def __init__(self, bxpd_h):
-        """
-        :Parameters:
-        """
-
-        self.bxpd_h = bxpd_h
-
-    def __str__(self):
-        return '%s' % self.bxpd_h
 
 
 class BS3BxpdSetupBlock(BS3BxpdBaseBlock):
@@ -109,7 +99,7 @@ class BS3BxpdSetupBlock(BS3BxpdBaseBlock):
 
     def __init__(self,
                  # header
-                 bxpd_h,
+                 header,
                  # setupblock stuff
                  srate_lst,
                  anchan_lst,
@@ -118,7 +108,7 @@ class BS3BxpdSetupBlock(BS3BxpdBaseBlock):
                  group_lst):
         """
         :Paramters:
-            bxpd_h : BS3BxpdBlockHeader
+            header : BS3BxpdBlockHeader
             
             srate_lst : list
                 list of sample rates (as double)
@@ -149,7 +139,7 @@ class BS3BxpdSetupBlock(BS3BxpdBaseBlock):
         """
 
         # super
-        super(BS3BxpdSetupBlock, self).__init__(bxpd_h)
+        super(BS3BxpdSetupBlock, self).__init__(header)
 
         # members
         self.srate_lst = list(srate_lst)
@@ -160,7 +150,7 @@ class BS3BxpdSetupBlock(BS3BxpdBaseBlock):
 
     def payload(self):
         rval = ''
-        rval += self.bxpd_h.payload()
+        rval += self.header.payload()
         rval += pack('<B%dd' % len(self.srate_lst), len(self.srate_lst), *self.srate_lst)
         rval += pack('<H', len(self.anchan_lst))
         for anchan in self.anchan_lst:
@@ -189,7 +179,7 @@ class BS3BxpdSetupBlock(BS3BxpdBaseBlock):
                                                             len(self.group_lst))
 
     @staticmethod
-    def from_data(bxpd_h, data):
+    def from_data(header, data):
         """build from data"""
 
         if not isinstance(data, str):
@@ -252,7 +242,7 @@ class BS3BxpdSetupBlock(BS3BxpdBaseBlock):
                 channels = unpack('<%dH' % grp_sz, data[at:at + 2 * grp_sz])
                 at += 2 * grp_sz
                 group_lst.append((nlen, name, grp_sz, channels))
-        return BS3BxpdSetupBlock(bxpd_h, srate_lst, anchan_lst, dichan_lst, evchan_lst, group_lst)
+        return BS3BxpdSetupBlock(header, srate_lst, anchan_lst, dichan_lst, evchan_lst, group_lst)
 
 
 class BS3BxpdDataBlock(BS3BxpdBaseBlock):
@@ -260,7 +250,7 @@ class BS3BxpdDataBlock(BS3BxpdBaseBlock):
 
     def __init__(self,
                  # header
-                 bxpd_h,
+                 header,
                  # datablock stuff
                  time_stamp,
                  srate_lst,
@@ -269,7 +259,7 @@ class BS3BxpdDataBlock(BS3BxpdBaseBlock):
                  evchan_lst):
         """
         :Paramters:
-            bxpd_h : BS3BxpdBlockHeader
+            header : BS3BxpdBlockHeader
             
             time_stamp: tuple(uint64, uint64)
                 (start, end) of chunks in mu_sec
@@ -291,7 +281,7 @@ class BS3BxpdDataBlock(BS3BxpdBaseBlock):
         """
 
         # super
-        super(BS3BxpdDataBlock, self).__init__(bxpd_h)
+        super(BS3BxpdDataBlock, self).__init__(header)
 
         # members
         self.time_stamp = tuple(time_stamp)
@@ -302,7 +292,7 @@ class BS3BxpdDataBlock(BS3BxpdBaseBlock):
 
     def payload(self):
         rval = ''
-        rval += self.bxpd_h.payload()
+        rval += self.header.payload()
         rval += pack('<QQ', *self.time_stamp)
         rval += pack('<B%dQ', len(self.srate_lst), *self.srate_lst)
         for anchan in self.anchan_lst:
@@ -332,7 +322,7 @@ class BS3BxpdDataBlock(BS3BxpdBaseBlock):
                                                      len(self.evchan_lst))
 
     @staticmethod
-    def from_data(bxpd_h, data):
+    def from_data(header, data):
         """build from data"""
 
         if not isinstance(data, str):
@@ -381,7 +371,17 @@ class BS3BxpdDataBlock(BS3BxpdBaseBlock):
                 ch_nr, t_val, e_typ = unpack('<HQB', data[at:at + 11])
                 at += 11
                 evchan_lst.append((ch_nr, t_val, e_typ))
-        return BS3BxpdDataBlock(bxpd_h, time_stamp, srate_lst, anchan_lst, dichan_lst, evchan_lst)
+        return BS3BxpdDataBlock(header, time_stamp, srate_lst, anchan_lst, dichan_lst, evchan_lst)
+
+
+##---PROTOCOL
+
+PROT = {
+    'H' : BS3BxpdBlockHeader,
+    'B' : BS3BxpdBaseBlock,
+    0 : BS3BxpdSetupBlock,
+    1 : BS3BxpdDataBlock
+}
 
 
 ##---MAIN

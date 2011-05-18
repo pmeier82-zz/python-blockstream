@@ -1,7 +1,7 @@
 from blockstream import *
 from p_bxpd import *
 from p_sort import *
-from bxpd_reader import *
+from bs_reader import *
 import scipy as sp
 import time
 from Queue import Queue
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     import time
 
     try:
-        bs_reader = BS3BxpdReader(verbose=False)
+        bs_reader = BS3SingleProtocolReader('BXPD', verbose=False)
         bs_reader.start()
 
         Q = Queue()

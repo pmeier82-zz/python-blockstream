@@ -28,7 +28,7 @@
 #______________________________________________________________________________
 #
 
-"""test dll loading and ctype stuff"""
+"""ctypes binding for the blockstream shared library"""
 __docformat__ = 'restructuredtext'
 
 
@@ -40,7 +40,8 @@ __all__ = [
     # protocol classes
     'BS3Error',
     'BS3BaseHeader',
-    'BS3DataBlockHeader'
+    'BS3DataBlockHeader',
+    'BS3BaseBlock',
 ]
 
 
@@ -122,7 +123,7 @@ class BS3DataBlockHeader(BS3BaseHeader):
                  time_stamp=0,
                  block_code='NONE'):
         """
-        :Paramters:
+        :Parameters:
             block_size : uint32 = 31
             writer_id : uint16 = 0
             block_index : uint64 = 0
@@ -167,6 +168,22 @@ class BS3DataBlockHeader(BS3BaseHeader):
         if ver != BS3DataBlockHeader.version or tcd != 1:
             raise ValueError('invalid protocol version(%s) or blocktype(%s)!' % (ver, tcd))
         return BS3DataBlockHeader(bsz, wid, bix, tsp, bcd)
+
+
+class BS3BaseBlock(object):
+    """"tier2 protocol block"""
+
+    BLOCK_CODE = 'NONE'
+
+    def __init__(self, header):
+        """
+        :Parameters:
+        """
+
+        self.header = header
+
+    def __str__(self):
+        return '%s' % self.header
 
 
 ##---MAIN
