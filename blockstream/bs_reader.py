@@ -35,7 +35,8 @@ __docformat__ = 'restructuredtext'
 ##---ALL
 
 __all__ = [
-    'BS3Reader',
+    'BS3SingleProtocolReader',
+    'BS3MultiProtocolReader',
 ]
 
 

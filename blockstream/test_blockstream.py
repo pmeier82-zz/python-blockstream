@@ -1,7 +1,5 @@
 from blockstream import *
-from p_bxpd import *
 from p_sort import *
-from bs_reader import *
 import scipy as sp
 import time
 from Queue import Queue
@@ -27,31 +25,11 @@ if __name__ == '__main__':
                                    [(FILT, TEMP, 0, 0, 0)]]])
     LIB.setPreamble(WID, PREAMBLE.BLOCK_CODE, PREAMBLE.payload(), len(PREAMBLE))
 
-    import time
-
     try:
-        bs_reader = BS3SingleProtocolReader('BXPD', verbose=False)
-        bs_reader.start()
-
-        Q = Queue()
-        print 'trying to connect listener'
         while True:
-            try:
-                bs_reader.add_listener(Q, TET)
-                break
-            except Exception, ex:
-                print ex
-                time.sleep(1)
-        print
-        print 'connected!'
-        while True:
-            item = Q.get()
-            if item is None:
-                raise RuntimeError('got None -> quiting')
             LIB.sendBlock(WID, BLOCK.BLOCK_CODE, BLOCK_BYTES, BLOCK_LEN)
     except Exception, ex:
         print ex
-        bs_reader.stop()
     finally:
         LIB.finalizeAll()
         print 'exit!'
