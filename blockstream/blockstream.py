@@ -52,6 +52,7 @@ import os
 import sys
 from struct import pack, unpack, calcsize
 import platform
+from ConfigParser import ConfigParser
 
 
 ##---CONSTANTS
@@ -64,12 +65,17 @@ if platform.system() == 'Windows':
 ##---FUNCTIONS
 
 def load_blockstream(verbose=False):
-    """load tzhe shared library so its available"""
+    """load the shared library so its available"""
 
-    target = os.path.join(os.path.dirname(__file__), LIBNAME)
+    cfg = ConfigParser()
+    cfg.read(os.path.join(os.path.dirname(__file__), 'blockstream.ini'))
+    libdir = cfg.get('library', 'libdir')
+    target = os.path.join(libdir, LIBNAME)
+    if verbose:
+        print 'looking for:', target
+    os.chdir(libdir)
     rval = CDLL(target)
     if verbose:
-        print 'looking up:', target
         print rval
     return rval
 
@@ -165,7 +171,7 @@ class BS3DataBlockHeader(BS3BaseHeader):
             raise ValueError('data must have len >= %s' % BS3DataBlockHeader.__len__())
         ver, bsz, hsz, wid, bix, tsp, tcd, bcd, xxx = unpack(BS3DataBlockHeader.signature,
                                                              data[:BS3DataBlockHeader.__len__()])
-        if ver != BS3DataBlockHeader.version or tcd != 1:
+        if ver != BS3DataBlockHeader.version:
             raise ValueError('invalid protocol version(%s) or blocktype(%s)!' % (ver, tcd))
         return BS3DataBlockHeader(bsz, wid, bix, tsp, bcd)
 
@@ -189,4 +195,8 @@ class BS3BaseBlock(object):
 ##---MAIN
 
 if __name__ == '__main__':
-    pass
+
+    print 'trying to load blockstream library!'
+    LIB = load_blockstream(True)
+    LIB.init()
+    LIB.finalizeAll()

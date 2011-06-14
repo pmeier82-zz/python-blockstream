@@ -40,15 +40,15 @@ __all__ = [
     'BS3BxpdBaseBlock',
     'BS3BxpdSetupBlock',
     'BS3BxpdDataBlock',
+    'BXPDProtocolHandler',
 ]
 
 
 ##---IMPORTS
 
-import os
 from struct import pack, unpack, calcsize
-import scipy as sp
 from blockstream import BS3BaseHeader, BS3BaseBlock
+from bs_reader import ProtocolHandler, BS3SingleProtocolReader
 
 
 ##---CLASSES
@@ -147,6 +147,9 @@ class BS3BxpdSetupBlock(BS3BxpdBaseBlock):
         self.dichan_lst = list(dichan_lst)
         self.evchan_lst = list(evchan_lst)
         self.group_lst = list(group_lst)
+        self.anchan_index_mapping = {}
+        for i in xrange(len(self.anchan_lst)):
+            self.anchan_index_mapping[self.anchan_lst[i][0]] = i
 
     def payload(self):
         rval = ''
@@ -374,17 +377,50 @@ class BS3BxpdDataBlock(BS3BxpdBaseBlock):
         return BS3BxpdDataBlock(header, time_stamp, srate_lst, anchan_lst, dichan_lst, evchan_lst)
 
 
-##---PROTOCOL
+class BXPDProtocolHandler(ProtocolHandler):
 
-PROT = {
-    'H' : BS3BxpdBlockHeader,
-    'B' : BS3BxpdBaseBlock,
-    0 : BS3BxpdSetupBlock,
-    1 : BS3BxpdDataBlock
-}
+    def on_block_ready(self, block_header, block_data):
+
+        if block_header.block_code == 'BXPD':
+
+            # handle our protocol
+            bxpd_header = BS3BxpdBlockHeader.from_data(block_data[:BS3BxpdBlockHeader.__len__()])
+            at = BS3BxpdBlockHeader.__len__()
+            bxpd_block = None
+            if bxpd_header.block_type == 0:
+                #setup block
+                bxpd_block = BS3BxpdSetupBlock.from_data(bxpd_header, block_data[at:])
+            elif bxpd_header.block_type == 1:
+                #setup block
+                bxpd_block = BS3BxpdDataBlock.from_data(bxpd_header, block_data[at:])
+            else:
+                print 'unknown block_code: %s::%s' % (block_header, bxpd_header)
+            return bxpd_block
+        else:
+            # other blocks -- what is wrong here?
+            print 'received block for other protocol! %s' % block_header
+            return None
+
+
+def test_single(n=100):
+
+    try:
+        from Queue import Queue
+        Q = Queue()
+        bs_reader = BS3SingleProtocolReader(BXPDProtocolHandler, Q, verbose=True, ident='TestBXPD')
+        bs_reader.start()
+        for _ in xrange(n):
+            item = Q.get()
+            print 'got item:', item
+    except Exception, ex:
+        print ex
+    finally:
+        bs_reader.stop()
+        print 'exit!'
 
 
 ##---MAIN
 
 if __name__ == '__main__':
-    pass
+
+    test_single()

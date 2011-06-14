@@ -166,9 +166,8 @@ class BS3SortSetupBlock(BS3SortBaseBlock):
                 grp_idx, nc, tf, cl = unpack('<HHHH', data[at:at + 8])
                 tf_nc = tf * nc
                 at += 8
-                cov_buf = unpack('<%df' % tf_nc ** 2, data[at:at + tf_nc * tf_nc * 4])
+                cov = sp.frombuffer(data[at:at + tf_nc * tf_nc * 4], dtype=sp.float32)
                 at += tf_nc * tf_nc * 4
-                cov = sp.frombuffer(cov_buf, dtype=sp.float32)
                 cov.shape = (tf_nc, tf_nc)
                 nunit, = unpack('<H', data[at:at + 2])
                 at += 2
@@ -176,11 +175,10 @@ class BS3SortSetupBlock(BS3SortBaseBlock):
                 if nunit > 0:
                     for _ in xrange(nunit):
                         filt_buf = unpack('<%df', data[at:at + tf_nc * 4])
+                        filt = sp.frombuffer(data[at:at + tf_nc * 4], dtype=sp.float32).reshape(tf, nc).T
                         at += tf_nc * 4
-                        filt = sp.frombuffer(filt_buf, dtype=sp.float32).reshape(tf, nc).T
-                        temp_buf = unpack('<%df', data[at:at + tf_nc * 4])
+                        temp = sp.frombuffer(data[at:at + tf_nc * 4], dtype=sp.float32).reshape(tf, nc).T
                         at += tf_nc * 4
-                        temp = sp.frombuffer(temp_buf, dtype=sp.float32).reshape(tf, nc).T
                         snr, u1, u2 = unpack('<fHH', data[at:at + 8])
                         at += 8
                         unit_lst.append((filt, temp, snr, u1, u2))
