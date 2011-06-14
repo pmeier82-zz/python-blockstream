@@ -111,7 +111,7 @@ class BS3CoveDataBlock(BS3CoveBaseBlock):
                 kind::char,
                 nc::uint16,
                 tf::uint16,
-                xcorrs::[*nc*nc * 2*tf-1]
+                xcorrs::[nc*nc * 2*tf-1]
                 ncov::[tf*nc * tf*nc]
         """
 

@@ -41,6 +41,8 @@ from p_cove import *
 from p_posi import *
 from p_sort import *
 
+__version__= '1.4.0.0'
+
 
 ##---MAIN
 
