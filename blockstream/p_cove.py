@@ -154,6 +154,7 @@ class BS3CoveDataBlock(BS3CoveBaseBlock):
         xcoors = sp.frombuffer(data[at:at + (nc * nc * (tf * 2 - 1) * 4)], dtype=sp.float32)
         xcoors.shape = (nc * nc, 2 * tf - 1)
         data_lst.append(xcoors)
+        at += nc * nc * (tf * 2 - 1) * 4
 
         cov = sp.frombuffer(data[at:at + (tf_nc * tf_nc * 4)], dtype=sp.float32)
         cov.shape = (tf_nc, tf_nc)
@@ -212,16 +213,16 @@ def test_visualize():
     bk = BS3CoveDataBlock.from_data(bh, indata[40:])
     print bk.data_lst
 
-    from pylab import matshow, show
-    matshow(bk.data_lst[-1])
-
-    show()
+    from plot import P
+    P.matshow(bk.data_lst[-1])
+    P.show()
 
 def test_visualize_block(block):
 
-    from pylab import matshow, show
-    matshow(block.data_lst[-1])
-    show()
+    from plot import P
+    P.matshow(block.data_lst[-2])
+    P.matshow(block.data_lst[-1])
+    P.show()
 
 ##---MAIN
 
