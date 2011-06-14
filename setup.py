@@ -44,7 +44,7 @@ protocol lives in layer 5 and 6 of the OSI network model.
 setup(
     # names and description
     name='Blockstream',
-    version='1.3.4.1',
+    version='1.4.0.1',
     author='Philipp Meier',
     author_email='pmeier82@googlemail.com',
     maintainer='Philipp Meier',
