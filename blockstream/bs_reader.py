@@ -35,7 +35,7 @@ __docformat__ = 'restructuredtext'
 ##---ALL
 
 __all__ = [
-    'BS3SingleProtocolReader',
+    'BS3Reader',
     'ProtocolHandler'
 ]
 
@@ -61,7 +61,7 @@ class ProtocolHandler(object):
         pass
 
 
-class BS3SingleProtocolReader(Thread):
+class BS3Reader(Thread):
     """thread relaying handling incoming blockstream packages
     
     works with a single tier 2 protocol
@@ -106,11 +106,6 @@ class BS3SingleProtocolReader(Thread):
 
     ## blockstream
 
-    def _initialize(self):
-
-        self._handler = self._protocol_handler_cls()
-
-
     def start_blockstream(self):
         """initialises the blockstream library for reading"""
 
@@ -125,8 +120,7 @@ class BS3SingleProtocolReader(Thread):
         """frees the resources allocated from the library"""
 
         if self._bs_lib is not None:
-            self._bs_lib.finalizeAll()
-#            self._bs_lib.finalizeReader(self._reader_id) # TODO: new blockstream
+            self._bs_lib.finalizeReader(self._reader_id)
         self._out_q.put_nowait(None)
         self._is_initialised.clear()
 
@@ -136,7 +130,7 @@ class BS3SingleProtocolReader(Thread):
         """polls for new data and relays to self._out_q"""
 
         # setup stuff
-        self._initialize()
+        self._handler = self._protocol_handler_cls()
         self.start_blockstream()
         self._serving = True
         self._is_shutdown.clear()
@@ -166,14 +160,17 @@ class BS3SingleProtocolReader(Thread):
                     raise BS3Error('bad block size!')
                 data = str(car_data[:i64_blocksize.value])
 
-                # lets segment the data
+                # lets get the block header
                 at = BS3DataBlockHeader.__len__()
-                blk_h = BS3DataBlockHeader.from_data(data[:at])
+                block_header = BS3DataBlockHeader.from_data(data[:at])
 
                 # call on block ready
-                protocol_block = self._handler.on_block_ready(blk_h, data[at:])
+                protocol_block = self._handler.on_block_ready(block_header, data[at:])
                 if protocol_block is not None:
-                    self._out_q.put((blk_h, protocol_block))
+                    self._out_q.put((block_header, protocol_block))
+                else:
+                    if self._verbose:
+                        print 'no push of bad block'
 
                 # release block
                 self._bs_lib.releaseBlock(self._reader_id)

@@ -48,8 +48,7 @@ __all__ = [
 from struct import pack, unpack
 import scipy as sp
 from blockstream import BS3BaseHeader, BS3BaseBlock
-from bs_reader import ProtocolHandler, BS3SingleProtocolReader
-
+from bs_reader import ProtocolHandler
 
 ##---CLASSES
 
@@ -189,8 +188,10 @@ def test_single(n=100):
 
     try:
         from Queue import Queue
+        from bs_reader import BS3Reader
+
         Q = Queue()
-        bs_reader = BS3SingleProtocolReader(COVEProtocolHandler, Q, verbose=True, ident='TestCOVE')
+        bs_reader = BS3Reader(COVEProtocolHandler, Q, verbose=True, ident='TestCOVE')
         bs_reader.start()
         for _ in xrange(n):
             item = Q.get()

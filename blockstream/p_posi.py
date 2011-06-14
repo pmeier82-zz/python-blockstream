@@ -46,7 +46,6 @@ __all__ = [
 ##---IMPORTS
 
 from struct import pack, unpack
-import scipy as sp
 from blockstream import BS3BaseHeader, BS3BaseBlock
 
 
