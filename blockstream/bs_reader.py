@@ -94,6 +94,9 @@ class BS3Reader(Thread):
         self._is_shutdown.set()
         self._is_initialised = Event()
         self._is_initialised.clear()
+        self._is_muted = Event()
+        self._is_muted.clear()
+        self._mute_state = False
         self._bs_lib = None
         self._verbose = bool(verbose)
         self._protocol_handler_cls = protocol_handler_cls
@@ -139,6 +142,13 @@ class BS3Reader(Thread):
         if self._verbose:
             print 'starting doomsday loop'
         while self._serving:
+
+            # mute toggle?
+            if self._is_muted.is_set() != self._mute_state:
+                self._mute_state = not self._mute_state
+                self._bs_lib.setReaderActive(self._reader_id, not self._mute_state)
+                if self._verbose:
+                    print 'setReaderActive(%d,%s)' % (self._reader_id, not self._mute_state)
 
             # receive data by polling library
             i64_latency = c_int64()
@@ -186,6 +196,14 @@ class BS3Reader(Thread):
 
         self._serving = False
         self._is_shutdown.wait()
+
+    def mute(self, toggle=False):
+        """toggel mute state"""
+
+        if toggle is True:
+            self._is_muted.set()
+        else:
+            self._is_muted.clear()
 
 
 ##---MAIN
