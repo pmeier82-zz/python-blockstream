@@ -48,7 +48,7 @@ __all__ = [
 
 from struct import pack, unpack, calcsize
 from blockstream import BS3BaseHeader, BS3BaseBlock
-from bs_reader import ProtocolHandler
+from bs_reader import ProtocolHandler, Queue, BS3Reader, USE_PROCESS
 
 ##---CLASSES
 
@@ -404,19 +404,19 @@ class BXPDProtocolHandler(ProtocolHandler):
 def test_single(n=100):
 
     try:
-        from Queue import Queue
-        from bs_reader import BS3Reader
-
         Q = Queue()
-        bs_reader = BS3Reader(BXPDProtocolHandler, Q, verbose=True, ident='TestBXPD')
+        bs_reader = BS3Reader(BXPDProtocolHandler, Q, verbose=False, ident='TestBXPD')
         bs_reader.start()
         for _ in xrange(n):
             item = Q.get()
-            print 'got item:', item
+#            print 'got item:', item
+            del item
     except Exception, ex:
         print ex
     finally:
         bs_reader.stop()
+        if USE_PROCESS:
+            bs_reader.terminate()
         print 'exit!'
 
 
@@ -424,4 +424,4 @@ def test_single(n=100):
 
 if __name__ == '__main__':
 
-    test_single()
+    test_single(1000)

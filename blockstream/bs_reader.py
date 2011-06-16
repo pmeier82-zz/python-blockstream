@@ -36,16 +36,24 @@ __docformat__ = 'restructuredtext'
 
 __all__ = [
     'BS3Reader',
-    'ProtocolHandler'
+    'ProtocolHandler',
+    'USE_PROCESS',
+    'Queue'
 ]
 
 
 ##---IMPORTS
 
 from ctypes import byref, c_int64, c_char, POINTER
-from threading import Thread, Event
-from Queue import Queue
 from blockstream import (load_blockstream, BS3Error, BS3DataBlockHeader)
+
+USE_PROCESS = False
+# paralell execution imports
+if USE_PROCESS is True:
+    from multiprocessing import Process as ParalellBase, Queue, Event
+else:
+    from threading import Thread as ParalellBase, Event
+    from Queue import Queue
 
 
 ##---CLASSES
@@ -61,7 +69,7 @@ class ProtocolHandler(object):
         pass
 
 
-class BS3Reader(Thread):
+class BS3Reader(ParalellBase):
     """thread relaying handling incoming blockstream packages
     
     works with a single tier 2 protocol
@@ -75,7 +83,7 @@ class BS3Reader(Thread):
             protocol : str
                 valid protocol identifier
                 Required
-            out_q : Queue
+            out_q : QueueClass
                 queue for output data
                 Required
             verbose : bool
@@ -84,16 +92,15 @@ class BS3Reader(Thread):
         """
 
         # super for thread
-        Thread.__init__(self, name='pyBlockStreamReader' + ident)
+        ParalellBase.__init__(self, name='pyBlockStreamReader' + ident)
         self.daemon = True
 
         # members
         self._ident = str(ident)
-        self._serving = False
         self._is_shutdown = Event()
         self._is_shutdown.set()
-        self._is_initialised = Event()
-        self._is_initialised.clear()
+        self._is_serving = Event()
+        self._is_serving.clear()
         self._is_muted = Event()
         self._is_muted.clear()
         self._mute_state = False
@@ -102,9 +109,6 @@ class BS3Reader(Thread):
         self._protocol_handler_cls = protocol_handler_cls
         self._handler = None
         self._reader_id = None
-
-        if not isinstance(out_q, Queue):
-            raise BS3Error('no output queue passed!')
         self._out_q = out_q
 
     ## blockstream
@@ -117,17 +121,16 @@ class BS3Reader(Thread):
         self._reader_id = self._bs_lib.startReader(self._ident)
         if self._verbose:
             print 'reader id:', self._reader_id
-        self._is_initialised.set()
 
     def stop_blockstream(self):
         """frees the resources allocated from the library"""
 
         if self._bs_lib is not None:
             self._bs_lib.finalizeReader(self._reader_id)
-        self._out_q.put_nowait(None)
-        self._is_initialised.clear()
+            if self._verbose:
+                print 'finalized reader id:', self._reader_id
 
-    ## threading
+    ## paralell interface
 
     def run(self):
         """polls for new data and relays to self._out_q"""
@@ -135,13 +138,13 @@ class BS3Reader(Thread):
         # setup stuff
         self._handler = self._protocol_handler_cls()
         self.start_blockstream()
-        self._serving = True
+        self._is_serving.set()
         self._is_shutdown.clear()
 
         # doomsday loop
         if self._verbose:
             print 'starting doomsday loop'
-        while self._serving:
+        while self._is_serving.is_set():
 
             # mute toggle?
             if self._is_muted.is_set() != self._mute_state:
@@ -189,12 +192,13 @@ class BS3Reader(Thread):
         if self._verbose:
             print 'left doomsday loop'
         self.stop_blockstream()
+        self._out_q.put_nowait(None)
         self._is_shutdown.set()
 
     def stop(self):
         """stop the thread"""
 
-        self._serving = False
+        self._is_serving.clear()
         self._is_shutdown.wait()
 
     def mute(self, toggle=False):
