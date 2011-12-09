@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of the package SpikePy that provides signal processing
-# algorithms tailored towards spike sorting. 
+# algorithms tailored towards spike sorting.
 #
 # Authors: Philipp Meier and Felix Franke
 # Affiliation:
@@ -13,19 +13,24 @@
 #   Tel: +49-30-314 26756
 #
 # Date: 2011-02-25
-# Copyright (c) 2011 Philipp Meier, Felix Franke & Technische Universität Berlin
+# Copyright (c) 2011 Philipp Meier, Felix Franke & Technische Universität
+# Berlin
 # Acknowledgement: This work was supported by Deutsche Forschungs Gemeinschaft
-#                  (DFG) with grant GRK 1589/1 and Bundesministerium für Bildung
+#                  (DFG) with grant GRK 1589/1 and Bundesministerium für
+# Bildung
 #                  und Forschung (BMBF) with grants 01GQ0743 and 01GQ0410.
 #
-#______________________________________________________________________________
+#___________________________________________________________________________
+# ___
 #
 # This is free software; you can redistribute it and/or modify it under the
 # terms of version 1.1 of the EUPL, European Union Public Licence.
 # The software is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS
 # FOR A PARTICULAR PURPOSE. See the EUPL for more details.
-#______________________________________________________________________________
+#___________________________________________________________________________
+# ___
 #
 
 """protocol for the sorting results with respect to the bxpd protocol"""
@@ -40,7 +45,7 @@ __all__ = [
     'BS3SortBaseBlock',
     'BS3SortSetupBlock',
     'BS3SortDataBlock',
-]
+    ]
 
 
 ##---IMPORTS
@@ -80,8 +85,10 @@ class BS3SortBlockHeader(BS3BaseHeader):
         if not isinstance(data, str):
             raise TypeError('needs a sting as input!')
         if len(data) < BS3SortBlockHeader.__len__():
-            raise ValueError('data must have len >= %s' % BS3SortBlockHeader.__len__())
-        ver, btp = unpack(BS3SortBlockHeader.signature, data[:BS3SortBlockHeader.__len__()])
+            raise ValueError(
+                'data must have len >= %s' % BS3SortBlockHeader.__len__())
+        ver, btp = unpack(BS3SortBlockHeader.signature,
+                          data[:BS3SortBlockHeader.__len__()])
         if ver != BS3SortBlockHeader.version:
             raise ValueError('invalid protocol version(%s)!' % ver)
         return BS3SortBlockHeader(btp)
@@ -104,20 +111,22 @@ class BS3SortSetupBlock(BS3SortBaseBlock):
         """
         :Paramters:
             header : BS3SortBlockHeader
-            
+
             group_lst : list
                 list of group specs. entry:
-                    (grp_idx::uint16,
-                     nc::uint16,
-                     tf::uint16,
-                     cutleft::uint16,
-                     ncov::[tf*nc*tf*nc],
-                     unit_lst::list
-                         (filter::f32[tf*nc],
-                          template::f32[tf*nc],
-                          snr::f32,
-                          user1::uint16,
-                          user2::uint16)
+                    grp_idx::uint16,
+                    nc::uint16,
+                    tf::uint16,
+                    cutleft::uint16,
+                    ncov::f32[tf*nc*tf*nc],
+                    unit_lst::list (
+                        unit_idx::uint32 (0=mu)
+                        filter::f32[tf*nc],
+                        template::f32[tf*nc],
+                        snr::f32,
+                        active::uint8 (0=off, 1=on)
+                        user1::uint16,
+                        user2::uint16)
                     )
         """
 
@@ -135,11 +144,12 @@ class BS3SortSetupBlock(BS3SortBaseBlock):
             grp_idx, nc, tf, cl = group[:4]
             rval += pack('<HHHH', grp_idx, nc, tf, cl)
             rval += group[4].astype(sp.float32).tostring()
-            rval += pack('<H', len(group[5]))
+            rval += pack('<I', len(group[5]))
             for unit in group[5]:
-                rval += unit[0].T.astype(sp.float32).tostring()
+                rval += pack('<I', unit[0])
                 rval += unit[1].T.astype(sp.float32).tostring()
-                rval += pack('<fHH', unit[2], unit[3], unit[4])
+                rval += unit[2].T.astype(sp.float32).tostring()
+                rval += pack('<fBHH', unit[3], unit[4], unit[5])
         return rval
 
     def __len__(self):
@@ -164,24 +174,30 @@ class BS3SortSetupBlock(BS3SortBaseBlock):
         if ngroup > 0:
             for _ in xrange(ngroup):
                 grp_idx, nc, tf, cl = unpack('<HHHH', data[at:at + 8])
-                tf_nc = tf * nc
                 at += 8
-                cov = sp.frombuffer(data[at:at + tf_nc * tf_nc * 4], dtype=sp.float32)
+                tf_nc = tf * nc
+                cov = sp.frombuffer(data[at:at + tf_nc * tf_nc * 4],
+                                    dtype=sp.float32)
                 at += tf_nc * tf_nc * 4
                 cov.shape = (tf_nc, tf_nc)
-                nunit, = unpack('<H', data[at:at + 2])
-                at += 2
+                nunit, = unpack('<I', data[at:at + 4])
+                at += 4
                 unit_lst = []
                 if nunit > 0:
                     for _ in xrange(nunit):
-                        filt_buf = unpack('<%df', data[at:at + tf_nc * 4])
-                        filt = sp.frombuffer(data[at:at + tf_nc * 4], dtype=sp.float32).reshape(tf, nc).T
+                        filt = sp.frombuffer(
+                            data[at:at + tf_nc * 4],
+                            dtype=sp.float32
+                        ).reshape(tf, nc).T
                         at += tf_nc * 4
-                        temp = sp.frombuffer(data[at:at + tf_nc * 4], dtype=sp.float32).reshape(tf, nc).T
+                        temp = sp.frombuffer(
+                            data[at:at + tf_nc * 4],
+                            dtype=sp.float32
+                        ).reshape(tf, nc).T
                         at += tf_nc * 4
-                        snr, u1, u2 = unpack('<fHH', data[at:at + 8])
-                        at += 8
-                        unit_lst.append((filt, temp, snr, u1, u2))
+                        snr, active, u1, u2 = unpack('<fBHH', data[at:at + 9])
+                        at += 9
+                        unit_lst.append((filt, temp, snr, active, u1, u2))
                 group_lst.append((grp_idx, nc, tf, cl, cov, unit_lst))
         return BS3SortSetupBlock(header, group_lst)
 
@@ -197,15 +213,15 @@ class BS3SortDataBlock(BS3SortBaseBlock):
         """
         :Paramters:
             header : BS3SortBlockHeader
-        
+
             event_lst : list
                 list of event channel chunks. entry:
-                    (group_nr::uint16,
-                     unit_nr::uint16,
-                     time_val::uint64,
-                     event_type::uint16,
-                     user1::uint16,
-                     user2::uint16)
+                    group_idx::uint16,
+                    unit_idx::uint32,
+                    time_val::uint64,
+                    event_type::uint16,
+                    user1::uint16,
+                    user2::uint16
         """
 
         # super
@@ -220,7 +236,7 @@ class BS3SortDataBlock(BS3SortBaseBlock):
         rval += pack('<I', len(self.event_lst))
         if len(self.event_lst) > 0:
             for ev in self.event_lst:
-                rval += pack('<HHQHHH', *ev)
+                rval += pack('<HIQHHH', *ev)
         return rval
 
     def __len__(self):
@@ -244,8 +260,8 @@ class BS3SortDataBlock(BS3SortBaseBlock):
         at += 4
         if nevent > 0:
             for _ in xrange(nevent):
-                ev = unpack('<HHQHHH', data[at:at + 18])
-                at += 18
+                ev = unpack('<HIQHHH', data[at:at + 20])
+                at += 20
                 event_lst.append(ev)
         return BS3SortDataBlock(header, event_lst)
 
@@ -253,10 +269,10 @@ class BS3SortDataBlock(BS3SortBaseBlock):
 ##---PROTOCOL
 
 PROT = {
-    'H' : BS3SortBlockHeader,
-    'B' : BS3SortBaseBlock,
-    0 : BS3SortSetupBlock,
-    1 : BS3SortDataBlock,
+    'H':BS3SortBlockHeader,
+    'B':BS3SortBaseBlock,
+    0:BS3SortSetupBlock,
+    1:BS3SortDataBlock,
 }
 
 ##---MAIN

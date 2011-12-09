@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of the package SpikePy that provides signal processing
-# algorithms tailored towards spike sorting. 
+# algorithms tailored towards spike sorting.
 #
 # Authors: Philipp Meier and Felix Franke
 # Affiliation:
@@ -28,7 +28,7 @@
 #______________________________________________________________________________
 #
 
-"""blockstream package for the NMDAQv3 software"""
+"""blockstream package for the NMDAQv3 software, late 2011 version"""
 __docformat__ = 'restructuredtext'
 
 
@@ -40,8 +40,9 @@ from p_bxpd import *
 from p_cove import *
 from p_posi import *
 from p_sort import *
+from p_wave import *
 
-__version__= '1.4.0.0'
+__version__= '3.1.75'
 
 
 ##---MAIN

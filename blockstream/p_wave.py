@@ -21,7 +21,6 @@
 #                  und Forschung (BMBF) with grants 01GQ0743 and 01GQ0410.
 #
 #___________________________________________________________________________
-# ___
 #
 # This is free software; you can redistribute it and/or modify it under the
 # terms of version 1.1 of the EUPL, European Union Public Licence.
@@ -30,34 +29,26 @@
 # FITNESS
 # FOR A PARTICULAR PURPOSE. See the EUPL for more details.
 #___________________________________________________________________________
-# ___
 #
 
-"""protocol for the sorting results with respect to the bxpd protocol"""
+"""protocol for the waveforms"""
 __docformat__ = 'restructuredtext'
-
-
-##---ALL
-
 __all__ = [
     # protocol classes
-    'BS3SortBlockHeader',
-    'BS3SortBaseBlock',
-    'BS3SortSetupBlock',
-    'BS3SortDataBlock',
-    ]
-
+    'BS3WaveBlockHeader',
+    'BS3WaveBaseBlock',
+    'BS3WaveDataBlock',
+]
 
 ##---IMPORTS
 
-from struct import pack, unpack, calcsize
+from struct import pack, unpack
 import scipy as sp
 from blockstream import BS3BaseHeader, BS3BaseBlock
 
-
 ##---CLASSES
 
-class BS3SortBlockHeader(BS3BaseHeader):
+class BS3WaveBlockHeader(BS3BaseHeader):
     """header for a datablock of type SORT from the blockstream protocol"""
 
     version = 1
@@ -84,148 +75,41 @@ class BS3SortBlockHeader(BS3BaseHeader):
 
         if not isinstance(data, str):
             raise TypeError('needs a sting as input!')
-        if len(data) < BS3SortBlockHeader.__len__():
+        if len(data) < BS3WaveBlockHeader.__len__():
             raise ValueError(
-                'data must have len >= %s' % BS3SortBlockHeader.__len__())
-        ver, btp = unpack(BS3SortBlockHeader.signature,
-                          data[:BS3SortBlockHeader.__len__()])
-        if ver != BS3SortBlockHeader.version:
+                'data must have len >= %s' % BS3WaveBlockHeader.__len__())
+        ver, btp = unpack(BS3WaveBlockHeader.signature,
+                          data[:BS3WaveBlockHeader.__len__()])
+        if ver != BS3WaveBlockHeader.version:
             raise ValueError('invalid protocol version(%s)!' % ver)
-        return BS3SortBlockHeader(btp)
+        return BS3WaveBlockHeader(btp)
 
 
-class BS3SortBaseBlock(BS3BaseBlock):
+class BS3WaveBaseBlock(BS3BaseBlock):
     """"Sort data block"""
 
-    BLOCK_CODE = 'SORT'
+    BLOCK_CODE = 'WAVE'
 
 
-class BS3SortSetupBlock(BS3SortBaseBlock):
-    """"SORT - setupblock"""
-
-    def __init__(self,
-                 # header
-                 header,
-                 # setupblock stuff
-                 group_lst):
-        """
-        :Paramters:
-            header : BS3SortBlockHeader
-
-            group_lst : list
-                list of group specs. entry:
-                    grp_idx::uint16,
-                    nc::uint16,
-                    tf::uint16,
-                    cutleft::uint16,
-                    ncov::f32[tf*nc*tf*nc],
-                    unit_lst::list (
-                        unit_idx::uint32 (0=mu)
-                        filter::f32[tf*nc],
-                        template::f32[tf*nc],
-                        snr::f32,
-                        active::uint8 (0=off, 1=on)
-                        user1::uint16,
-                        user2::uint16)
-                    )
-        """
-
-        # super
-        super(BS3SortSetupBlock, self).__init__(header)
-
-        # members
-        self.group_lst = list(group_lst)
-
-    def payload(self):
-        rval = ''
-        rval += self.header.payload()
-        rval += pack('<H', len(self.group_lst))
-        for group in self.group_lst:
-            grp_idx, nc, tf, cl = group[:4]
-            rval += pack('<HHHH', grp_idx, nc, tf, cl)
-            rval += group[4].astype(sp.float32).tostring()
-            rval += pack('<I', len(group[5]))
-            for unit in group[5]:
-                rval += pack('<I', unit[0])
-                rval += unit[1].T.astype(sp.float32).tostring()
-                rval += unit[2].T.astype(sp.float32).tostring()
-                rval += pack('<fBHH', unit[3], unit[4], unit[5])
-        return rval
-
-    def __len__(self):
-        return len(self.payload())
-
-    def __str__(self):
-        super_str = super(BS3SortSetupBlock, self).__str__()
-        return '%s::[gr:%d]' % (super_str, len(self.group_lst))
-
-    @staticmethod
-    def from_data(header, data):
-        """build from data"""
-
-        if not isinstance(data, str):
-            raise TypeError('needs a sting as input!')
-        at = 0
-
-        # groups
-        group_lst = []
-        ngroup, = unpack('<H', data[at:at + 2])
-        at += 2
-        if ngroup > 0:
-            for _ in xrange(ngroup):
-                grp_idx, nc, tf, cl = unpack('<HHHH', data[at:at + 8])
-                at += 8
-                tf_nc = tf * nc
-                cov = sp.frombuffer(data[at:at + tf_nc * tf_nc * 4],
-                                    dtype=sp.float32)
-                at += tf_nc * tf_nc * 4
-                cov.shape = (tf_nc, tf_nc)
-                nunit, = unpack('<I', data[at:at + 4])
-                at += 4
-                unit_lst = []
-                if nunit > 0:
-                    for _ in xrange(nunit):
-                        filt = sp.frombuffer(
-                            data[at:at + tf_nc * 4],
-                            dtype=sp.float32
-                        ).reshape(tf, nc).T
-                        at += tf_nc * 4
-                        temp = sp.frombuffer(
-                            data[at:at + tf_nc * 4],
-                            dtype=sp.float32
-                        ).reshape(tf, nc).T
-                        at += tf_nc * 4
-                        snr, active, u1, u2 = unpack('<fBHH', data[at:at + 9])
-                        at += 9
-                        unit_lst.append((filt, temp, snr, active, u1, u2))
-                group_lst.append((grp_idx, nc, tf, cl, cov, unit_lst))
-        return BS3SortSetupBlock(header, group_lst)
-
-
-class BS3SortDataBlock(BS3SortBaseBlock):
-    """"SORT - datablock"""
+class BS3WaveDataBlock(BS3WaveBaseBlock):
+    """"WAVE - datablock"""
 
     def __init__(self,
-                 # header
-                 header,
-                 # datablock stuff
                  event_lst):
         """
         :Paramters:
-            header : BS3SortBlockHeader
-
             event_lst : list
-                list of event channel chunks. entry:
-                    group_nr::uint16,
-                    unit_nr::uint32,
+                list of waveform data entry:
+                    group_idx::uint16,
+                    unit_idx::uint32,
                     time_val::uint64,
-                    event_type::uint16,
-                    user1::uint16,
-                    user2::uint16
+                    nC::uint16,
+                    nS::uint16,
+                    samples::uint16[nS*nC]
         """
 
         # super
-        super(BS3SortDataBlock, self).__init__(header)
+        super(BS3WaveDataBlock, self).__init__(BS3WaveBlockHeader(0))
 
         # members
         self.event_lst = list(event_lst)
@@ -236,14 +120,15 @@ class BS3SortDataBlock(BS3SortBaseBlock):
         rval += pack('<I', len(self.event_lst))
         if len(self.event_lst) > 0:
             for ev in self.event_lst:
-                rval += pack('<HIQHHH', *ev)
+                rval += pack('<HIQHH', ev[:-1])
+                rval += ev[-1].T.astype(sp.float32).tostring()
         return rval
 
     def __len__(self):
         return len(self.payload())
 
     def __str__(self):
-        super_str = super(BS3SortDataBlock, self).__str__()
+        super_str = super(BS3WaveDataBlock, self).__str__()
         return '%s::[ev:%d]' % (super_str, len(self.event_lst))
 
     @staticmethod
@@ -260,20 +145,23 @@ class BS3SortDataBlock(BS3SortBaseBlock):
         at += 4
         if nevent > 0:
             for _ in xrange(nevent):
-                ev = unpack('<HIQHHH', data[at:at + 20])
-                at += 20
-                event_lst.append(ev)
-        return BS3SortDataBlock(header, event_lst)
+                gid, uid, tv, nc, ns = unpack('<HIQHH', data[at:at + 18])
+                at += 18
+                wf = sp.frombuffer(
+                    data[at:at + ns * nc * 2],
+                    dtype=sp.int16
+                ).reshape(ns, nc).T
+                event_lst.append((gid, uid, tv, nc, ns, wf))
+        return BS3WaveDataBlock(header, event_lst)
 
 
 ##---PROTOCOL
 
 PROT = {
-    'H':BS3SortBlockHeader,
-    'B':BS3SortBaseBlock,
-    0:BS3SortSetupBlock,
-    1:BS3SortDataBlock,
-}
+    'H':BS3WaveBlockHeader,
+    'B':BS3WaveBaseBlock,
+    0:BS3WaveDataBlock,
+    }
 
 ##---MAIN
 
