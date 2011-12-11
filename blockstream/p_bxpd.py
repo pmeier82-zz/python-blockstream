@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of the package SpikePy that provides signal processing
-# algorithms tailored towards spike sorting. 
+# algorithms tailored towards spike sorting.
 #
 # Authors: Philipp Meier and Felix Franke
 # Affiliation:
@@ -30,10 +30,6 @@
 
 """protocol for the data of tetrodes"""
 __docformat__ = 'restructuredtext'
-
-
-##---ALL
-
 __all__ = [
     # protocol classes
     'BS3BxpdBlockHeader',
@@ -97,9 +93,6 @@ class BS3BxpdSetupBlock(BS3BxpdBaseBlock):
     """"BXPD - setupblock"""
 
     def __init__(self,
-                 # header
-                 header,
-                 # setupblock stuff
                  srate_lst,
                  anchan_lst,
                  dichan_lst,
@@ -107,8 +100,6 @@ class BS3BxpdSetupBlock(BS3BxpdBaseBlock):
                  group_lst):
         """
         :Paramters:
-            header : BS3BxpdBlockHeader
-            
             srate_lst : list
                 list of sample rates (as double)
             anchan_lst : list
@@ -138,7 +129,7 @@ class BS3BxpdSetupBlock(BS3BxpdBaseBlock):
         """
 
         # super
-        super(BS3BxpdSetupBlock, self).__init__(header)
+        super(BS3BxpdSetupBlock, self).__init__(BS3BxpdBlockHeader(0))
 
         # members
         self.srate_lst = list(srate_lst)
@@ -251,9 +242,6 @@ class BS3BxpdDataBlock(BS3BxpdBaseBlock):
     """"BXPD - datablock"""
 
     def __init__(self,
-                 # header
-                 header,
-                 # datablock stuff
                  time_stamp,
                  srate_lst,
                  anchan_lst,
@@ -261,8 +249,6 @@ class BS3BxpdDataBlock(BS3BxpdBaseBlock):
                  evchan_lst):
         """
         :Paramters:
-            header : BS3BxpdBlockHeader
-            
             time_stamp: tuple(uint64, uint64)
                 (start, end) of chunks in mu_sec
             srate_lst : list
@@ -283,7 +269,7 @@ class BS3BxpdDataBlock(BS3BxpdBaseBlock):
         """
 
         # super
-        super(BS3BxpdDataBlock, self).__init__(header)
+        super(BS3BxpdDataBlock, self).__init__(BS3BxpdBlockHeader(1))
 
         # members
         self.time_stamp = tuple(time_stamp)

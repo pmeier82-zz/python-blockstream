@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of the package SpikePy that provides signal processing
-# algorithms tailored towards spike sorting. 
+# algorithms tailored towards spike sorting.
 #
 # Authors: Philipp Meier and Felix Franke
 # Affiliation:
@@ -13,41 +13,41 @@
 #   Tel: +49-30-314 26756
 #
 # Date: 2011-02-25
-# Copyright (c) 2011 Philipp Meier, Felix Franke & Technische Universität Berlin
+# Copyright (c) 2011 Philipp Meier, Felix Franke & Technische Universität
+# Berlin
 # Acknowledgement: This work was supported by Deutsche Forschungs Gemeinschaft
-#                  (DFG) with grant GRK 1589/1 and Bundesministerium für Bildung
+#                  (DFG) with grant GRK 1589/1 and Bundesministerium für
+# Bildung
 #                  und Forschung (BMBF) with grants 01GQ0743 and 01GQ0410.
 #
-#______________________________________________________________________________
+#___________________________________________________________________________
+# ___
 #
 # This is free software; you can redistribute it and/or modify it under the
 # terms of version 1.1 of the EUPL, European Union Public Licence.
 # The software is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS
 # FOR A PARTICULAR PURPOSE. See the EUPL for more details.
-#______________________________________________________________________________
+#___________________________________________________________________________
+# ___
 #
 
 """protocol for the position information and steering of recoding devices"""
 __docformat__ = 'restructuredtext'
-
-
-##---ALL
-
 __all__ = [
     # protocol classes
     'BS3PosiBlockHeader',
     'BS3PosiBaseBlock',
     'BS3PosiSetupBlock',
     'BS3PosiDataBlock',
-]
-
+    'BS3PosiSteerBlock'
+    ]
 
 ##---IMPORTS
 
 from struct import pack, unpack
 from blockstream import BS3BaseHeader, BS3BaseBlock
-
 
 ##---CLASSES
 
@@ -61,7 +61,8 @@ class BS3PosiBlockHeader(BS3BaseHeader):
         """
         :Parameters:
             block_type : uint8
-                BT=0 -> setup block; BT=1 -> info block; BT=2 -> steering block
+                BT=0 -> setup block; BT=1 -> info block; BT=2 -> steering
+                block
         """
 
         self.block_type = int(block_type)
@@ -79,15 +80,17 @@ class BS3PosiBlockHeader(BS3BaseHeader):
         if not isinstance(data, str):
             raise TypeError('needs a sting as input!')
         if len(data) < BS3PosiBlockHeader.__len__():
-            raise ValueError('data must have len >= %s' % BS3PosiBlockHeader.__len__())
-        ver, btp = unpack(BS3PosiBlockHeader.signature, data[:BS3PosiBlockHeader.__len__()])
+            raise ValueError(
+                'data must have len >= %s' % BS3PosiBlockHeader.__len__())
+        ver, btp = unpack(BS3PosiBlockHeader.signature,
+                          data[:BS3PosiBlockHeader.__len__()])
         if ver != BS3PosiBlockHeader.version:
             raise ValueError('invalid protocol version(%s)!' % ver)
         return BS3PosiBlockHeader(btp)
 
 
 class BS3PosiBaseBlock(BS3BaseBlock):
-    """"Posi data block"""
+    """"posi data block"""
 
     BLOCK_CODE = 'POSI'
 
@@ -96,21 +99,16 @@ class BS3PosiSetupBlock(BS3PosiBaseBlock):
     """"POSI - setupblock"""
 
     def __init__(self,
-                 # header
-                 header,
-                 # setupblock stuff
                  group_lst):
         """
         :Paramters:
-            header : BS3PosiBlockHeader
-            
             group_lst : list
                 list of group specs. entry:
                     grp_idx::uint16
         """
 
         # super
-        super(BS3PosiSetupBlock, self).__init__(header)
+        super(BS3PosiSetupBlock, self).__init__(BS3PosiBlockHeader(0))
 
         # members
         self.group_lst = list(group_lst)
@@ -155,14 +153,9 @@ class BS3PosiDataBlock(BS3PosiBaseBlock):
     """"POSI - datablock"""
 
     def __init__(self,
-                 # header
-                 header,
-                 # datablock stuff
                  grp_lst):
         """
         :Paramters:
-            header : BS3PosiBlockHeader
-        
             grp_lst : list
                 list of positions per group. entry:
                     (group_nr::uint16,
@@ -170,7 +163,7 @@ class BS3PosiDataBlock(BS3PosiBaseBlock):
         """
 
         # super
-        super(BS3PosiDataBlock, self).__init__(header)
+        super(BS3PosiDataBlock, self).__init__(BS3PosiBlockHeader(1))
 
         # members
         self.grp_lst = list(grp_lst)
@@ -215,14 +208,9 @@ class BS3PosiSteerBlock(BS3PosiBaseBlock):
     """"POSI - steeringblock"""
 
     def __init__(self,
-                 # header
-                 header,
-                 # datablock stuff
                  grp_lst):
         """
         :Paramters:
-            header : BS3PosiBlockHeader
-        
             grp_lst : list
                 list of positions per group. entry:
                     (group_nr::uint16,
@@ -230,7 +218,7 @@ class BS3PosiSteerBlock(BS3PosiBaseBlock):
         """
 
         # super
-        super(BS3PosiDataBlock, self).__init__(header)
+        super(BS3PosiDataBlock, self).__init__(BS3PosiBlockHeader(2))
 
         # members
         self.grp_lst = list(grp_lst)
@@ -274,11 +262,12 @@ class BS3PosiSteerBlock(BS3PosiBaseBlock):
 ##---PROTOCOL
 
 PROT = {
-    'H' : BS3PosiBlockHeader,
-    0 : BS3PosiSetupBlock,
-    1 : BS3PosiDataBlock,
-    2 : BS3PosiSteerBlock,
-}
+    'H':BS3PosiBlockHeader,
+    'B':BS3PosiBaseBlock,
+    0:BS3PosiSetupBlock,
+    1:BS3PosiDataBlock,
+    2:BS3PosiSteerBlock,
+    }
 
 
 ##---MAIN

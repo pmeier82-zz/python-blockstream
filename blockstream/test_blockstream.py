@@ -17,7 +17,7 @@ BLOCK_LEN = len(BLOCK_BYTES)
 if __name__ == '__main__':
 
     LIB = load_blockstream(True)
-    LIB.init('test_blockstream', 15000)
+    LIB.init("Test App")
     WID = LIB.startWriter('pyTestSortWriter')
     PREAMBLE = BS3SortSetupBlock(BS3SortBlockHeader(0),
                                  [[0, NC, TF, 0,

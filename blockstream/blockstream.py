@@ -13,19 +13,24 @@
 #   Tel: +49-30-314 26756
 #
 # Date: 2011-02-25
-# Copyright (c) 2011 Philipp Meier, Felix Franke & Technische Universität Berlin
+# Copyright (c) 2011 Philipp Meier, Felix Franke & Technische Universität
+# Berlin
 # Acknowledgement: This work was supported by Deutsche Forschungs Gemeinschaft
-#                  (DFG) with grant GRK 1589/1 and Bundesministerium für Bildung
+#                  (DFG) with grant GRK 1589/1 and Bundesministerium für
+# Bildung
 #                  und Forschung (BMBF) with grants 01GQ0743 and 01GQ0410.
 #
-#______________________________________________________________________________
+#___________________________________________________________________________
+# ___
 #
 # This is free software; you can redistribute it and/or modify it under the
 # terms of version 1.1 of the EUPL, European Union Public Licence.
 # The software is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS
 # FOR A PARTICULAR PURPOSE. See the EUPL for more details.
-#______________________________________________________________________________
+#___________________________________________________________________________
+# ___
 #
 
 """ctypes binding for the blockstream shared library"""
@@ -42,42 +47,40 @@ __all__ = [
     'BS3BaseHeader',
     'BS3DataBlockHeader',
     'BS3BaseBlock',
-]
+    ]
 
 
 ##---IMPORTS
 
 from ctypes import CDLL
 import os
-import sys
 from struct import pack, unpack, calcsize
 import platform
 from ConfigParser import ConfigParser
 
 
-##---LIBRARY
+##---CONSTANTS
 
 try:
-    LIBNAME
     LIBHANDLE
 except:
-    LIBNAME = 'libBlockStream.so'
+    lib_name = 'libBlockStream.so'
     if platform.system() == 'Windows':
-        LIBNAME = 'BlockStream.dll'
+        lib_name = 'BlockStream.dll'
     cfg = ConfigParser()
     cfg.read(os.path.join(os.path.dirname(__file__), 'blockstream.ini'))
-    libdir = cfg.get('library', 'libdir')
-    target = os.path.join(libdir, LIBNAME)
+    lib_dir = cfg.get('library', 'libdir')
+    target = os.path.join(lib_dir, lib_name)
     print 'looking for:', target
-    os.chdir(libdir)
+    os.chdir(lib_dir)
     LIBHANDLE = CDLL(target)
     print LIBHANDLE
+    del lib_name, lib_dir, cfg, target
 
 ##---FUNCTIONS
 
-def load_blockstream(verbose=False):
-    """load the shared library so its available"""
-
+def load_blockstream():
+    """get a reference to the interpreter wide shared library handle"""
     return LIBHANDLE
 
 ##---CLASSES
@@ -85,17 +88,19 @@ def load_blockstream(verbose=False):
 class BS3Error(Exception):
     pass
 
+
 class BS3BaseHeader(object):
     """baseclass for blockstream protocol headers
 
     Subclasses should define the version and the binary signature as of the
     header as a class attribute. The version is an int, the signature is a str
-    as explained in the `struct` package. Subclasses must implement the payload
+    as explained in the `struct` package. Subclasses must implement the
+    payload
     and from_data method.
     """
 
     version = 0
-    signature = ''
+    signature = '???'
 
     def payload(self):
         raise NotImplementedError
@@ -168,11 +173,14 @@ class BS3DataBlockHeader(BS3BaseHeader):
         if not isinstance(data, str):
             raise TypeError('needs a sting as input!')
         if len(data) < BS3DataBlockHeader.__len__():
-            raise ValueError('data must have len >= %s' % BS3DataBlockHeader.__len__())
-        ver, bsz, hsz, wid, bix, tsp, tcd, bcd, xxx = unpack(BS3DataBlockHeader.signature,
-                                                             data[:BS3DataBlockHeader.__len__()])
+            raise ValueError(
+                'data must have len >= %s' % BS3DataBlockHeader.__len__())
+        ver, bsz, hsz, wid, bix, tsp, tcd, bcd, xxx = unpack(
+            BS3DataBlockHeader.signature,
+            data[:BS3DataBlockHeader.__len__()])
         if ver != BS3DataBlockHeader.version:
-            raise ValueError('invalid protocol version(%s) or blocktype(%s)!' % (ver, tcd))
+            raise ValueError(
+                'invalid protocol version(%s) or blocktype(%s)!' % (ver, tcd))
         return BS3DataBlockHeader(bsz, wid, bix, tsp, bcd)
 
 
@@ -195,8 +203,7 @@ class BS3BaseBlock(object):
 ##---MAIN
 
 if __name__ == '__main__':
-
     print 'trying to load blockstream library!'
-    LIB = load_blockstream(True)
-    LIB.init()
+    LIB = load_blockstream()
+    LIB.init("Test App", 15000)
     LIB.finalizeAll()
