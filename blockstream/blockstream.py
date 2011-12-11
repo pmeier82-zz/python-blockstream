@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of the package SpikePy that provides signal processing
-# algorithms tailored towards spike sorting. 
+# algorithms tailored towards spike sorting.
 #
 # Authors: Philipp Meier and Felix Franke
 # Affiliation:
@@ -55,30 +55,30 @@ import platform
 from ConfigParser import ConfigParser
 
 
-##---CONSTANTS
+##---LIBRARY
 
-LIBNAME = 'libBlockStream.so'
-if platform.system() == 'Windows':
-    LIBNAME = 'BlockStream.dll'
-
+try:
+    LIBNAME
+    LIBHANDLE
+except:
+    LIBNAME = 'libBlockStream.so'
+    if platform.system() == 'Windows':
+        LIBNAME = 'BlockStream.dll'
+    cfg = ConfigParser()
+    cfg.read(os.path.join(os.path.dirname(__file__), 'blockstream.ini'))
+    libdir = cfg.get('library', 'libdir')
+    target = os.path.join(libdir, LIBNAME)
+    print 'looking for:', target
+    os.chdir(libdir)
+    LIBHANDLE = CDLL(target)
+    print LIBHANDLE
 
 ##---FUNCTIONS
 
 def load_blockstream(verbose=False):
     """load the shared library so its available"""
 
-    cfg = ConfigParser()
-    cfg.read(os.path.join(os.path.dirname(__file__), 'blockstream.ini'))
-    libdir = cfg.get('library', 'libdir')
-    target = os.path.join(libdir, LIBNAME)
-    if verbose:
-        print 'looking for:', target
-    os.chdir(libdir)
-    rval = CDLL(target)
-    if verbose:
-        print rval
-    return rval
-
+    return LIBHANDLE
 
 ##---CLASSES
 
@@ -87,7 +87,7 @@ class BS3Error(Exception):
 
 class BS3BaseHeader(object):
     """baseclass for blockstream protocol headers
-    
+
     Subclasses should define the version and the binary signature as of the
     header as a class attribute. The version is an int, the signature is a str
     as explained in the `struct` package. Subclasses must implement the payload
@@ -111,7 +111,7 @@ class BS3BaseHeader(object):
 
 class BS3DataBlockHeader(BS3BaseHeader):
     """header for a generic datablock from the blockstream protocol
-    
+
     Only used when receiving packages! The datapackages are formed by the
     blockstream libray internally.
     """
