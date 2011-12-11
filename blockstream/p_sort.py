@@ -103,15 +103,9 @@ class BS3SortBaseBlock(BS3BaseBlock):
 class BS3SortSetupBlock(BS3SortBaseBlock):
     """"SORT - setupblock"""
 
-    def __init__(self,
-                 # header
-                 header,
-                 # setupblock stuff
-                 group_lst):
+    def __init__(self, group_lst):
         """
         :Paramters:
-            header : BS3SortBlockHeader
-
             group_lst : list
                 list of group specs. entry:
                     grp_idx::uint16,
@@ -131,7 +125,7 @@ class BS3SortSetupBlock(BS3SortBaseBlock):
         """
 
         # super
-        super(BS3SortSetupBlock, self).__init__(header)
+        super(BS3SortSetupBlock, self).__init__(BS3SortBlockHeader(0))
 
         # members
         self.group_lst = list(group_lst)
@@ -205,15 +199,9 @@ class BS3SortSetupBlock(BS3SortBaseBlock):
 class BS3SortDataBlock(BS3SortBaseBlock):
     """"SORT - datablock"""
 
-    def __init__(self,
-                 # header
-                 header,
-                 # datablock stuff
-                 event_lst):
+    def __init__(self, event_lst):
         """
         :Paramters:
-            header : BS3SortBlockHeader
-
             event_lst : list
                 list of event channel chunks. entry:
                     group_idx::uint16,
@@ -225,7 +213,7 @@ class BS3SortDataBlock(BS3SortBaseBlock):
         """
 
         # super
-        super(BS3SortDataBlock, self).__init__(header)
+        super(BS3SortDataBlock, self).__init__(BS3SortBlockHeader(1))
 
         # members
         self.event_lst = list(event_lst)
@@ -269,11 +257,11 @@ class BS3SortDataBlock(BS3SortBaseBlock):
 ##---PROTOCOL
 
 PROT = {
-    'H':BS3SortBlockHeader,
-    'B':BS3SortBaseBlock,
-    0:BS3SortSetupBlock,
-    1:BS3SortDataBlock,
-}
+    'H': BS3SortBlockHeader,
+    'B': BS3SortBaseBlock,
+    0: BS3SortSetupBlock,
+    1: BS3SortDataBlock,
+    }
 
 ##---MAIN
 

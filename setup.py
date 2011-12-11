@@ -32,7 +32,7 @@ CLASSIFIERS = [
 DESCRIPTION = 'python bindings for the blockstream shared library'
 LONG_DESCRIPTION = """%s
 
-Python bindings to interface with the blockstream a network package protocol.
+Python bindings to interface with the blockstream network package protocol.
 The blockstream protocol implements a container type package, called a block,
 that is used as a transport proxy for other more specific protocols. The
 protocol lives in layer 5 and 6 of the OSI network model.
