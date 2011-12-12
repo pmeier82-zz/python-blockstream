@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of the package SpikePy that provides signal processing
-# algorithms tailored towards spike sorting. 
+# algorithms tailored towards spike sorting.
 #
 # Authors: Philipp Meier and Felix Franke
 # Affiliation:
@@ -30,17 +30,7 @@
 
 """reader thread handling single tetrode data management"""
 __docformat__ = 'restructuredtext'
-
-
-##---ALL
-
-__all__ = [
-    'BS3Reader',
-    'ProtocolHandler',
-    'USE_PROCESS',
-    'Queue'
-]
-
+__all__ = ['BS3Reader','ProtocolHandler','USE_PROCESS','Queue']
 
 ##---IMPORTS
 
@@ -54,7 +44,6 @@ if USE_PROCESS is True:
 else:
     from threading import Thread as ParalellBase, Event
     from Queue import Queue
-
 
 ##---CLASSES
 
@@ -71,7 +60,7 @@ class ProtocolHandler(object):
 
 class BS3Reader(ParalellBase):
     """thread relaying handling incoming blockstream packages
-    
+
     works with a single tier 2 protocol
     """
 
@@ -89,10 +78,12 @@ class BS3Reader(ParalellBase):
             verbose : bool
                 if True, report internal activity
                 Default=False
+            ident : str
+                identification string will be found in control.. or so
         """
 
         # super for thread
-        ParalellBase.__init__(self, name='pyBlockStreamReader' + ident)
+        ParalellBase.__init__(self, name='pyBS3Reader::' + ident)
         self.daemon = True
 
         # members

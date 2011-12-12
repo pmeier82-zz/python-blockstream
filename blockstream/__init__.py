@@ -31,7 +31,6 @@
 """blockstream package for the NMDAQv3 software, late 2011 version"""
 __docformat__ = 'restructuredtext'
 
-
 ##---PACKAGE
 
 from blockstream import *
@@ -43,7 +42,6 @@ from p_sort import *
 from p_wave import *
 
 __version__= '3.1.80'
-
 
 ##---MAIN
 

@@ -35,32 +35,22 @@
 
 """ctypes binding for the blockstream shared library"""
 __docformat__ = 'restructuredtext'
-
-
-##---ALL
-
-__all__ = [
-    # library loading
-    'load_blockstream',
-    # protocol classes
-    'BS3Error',
-    'BS3BaseHeader',
-    'BS3DataBlockHeader',
-    'BS3BaseBlock',
-    ]
-
+__all__ = ['load_blockstream', 'get_appname', 'BS3Error', 'BS3BaseHeader',
+           'BS3DataBlockHeader', 'BS3BaseBlock', ]
 
 ##---IMPORTS
 
-from ctypes import CDLL
 import os
-from struct import pack, unpack, calcsize
 import platform
+import time
+from ctypes import CDLL
+from struct import pack, unpack, calcsize
 from ConfigParser import ConfigParser
-
 
 ##---CONSTANTS
 
+APPNAME = None
+CONTROL_PORT = 15000
 try:
     LIBHANDLE
 except:
@@ -74,14 +64,27 @@ except:
     print 'looking for:', target
     os.chdir(lib_dir)
     LIBHANDLE = CDLL(target)
+    LIBHANDLE.init()
     print LIBHANDLE
     del lib_name, lib_dir, cfg, target
 
 ##---FUNCTIONS
 
-def load_blockstream():
+def load_blockstream(app_name):
     """get a reference to the interpreter wide shared library handle"""
+
+    global APPNAME, LIBHANDLE
+    if APPNAME is None:
+        APPNAME = str(app_name)
+        LIBHANDLE.initApp(APPNAME, CONTROL_PORT)
     return LIBHANDLE
+
+
+def get_appname():
+    """returns the set appname"""
+
+    global APPNAME
+    return APPNAME
 
 ##---CLASSES
 
@@ -204,6 +207,5 @@ class BS3BaseBlock(object):
 
 if __name__ == '__main__':
     print 'trying to load blockstream library!'
-    LIB = load_blockstream()
-    LIB.init("Test App", 15000)
+    LIB = load_blockstream('blockstream.py test')
     LIB.finalizeAll()
