@@ -143,7 +143,7 @@ class BS3SortSetupBlock(BS3SortBaseBlock):
                 rval += pack('<I', unit[0])
                 rval += unit[1].T.astype(sp.float32).tostring()
                 rval += unit[2].T.astype(sp.float32).tostring()
-                rval += pack('<fBHH', unit[3], unit[4], unit[5])
+                rval += pack('<fBHH', unit[3], unit[4], unit[5], unit[6])
         return rval
 
     def __len__(self):
