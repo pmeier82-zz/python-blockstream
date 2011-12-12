@@ -17,12 +17,9 @@ BLOCK_LEN = len(BLOCK_BYTES)
 if __name__ == '__main__':
     LIB = load_blockstream()
     print 'got lib'
-    LIB.finalizeWriter(0)
-    print 'returned: LIB.finalizeWriter(0)'
-    LIB.initQt()
-    print 'returned: LIB.initQt()'
+    LIB.init()
     LIB.initApp('test', 15000)
-    print "returned: LIB.initQt('test', 15000)"
+    print "returned: LIB.init('test', 15000)"
     WID = LIB.startWriter('pyTestSortWriter', 'SORT')
     print "returned: WID = LIB.startWriter('pyTestSortWriter', 'SORT')"
     PREAMBLE = BS3SortSetupBlock([
@@ -32,6 +29,7 @@ if __name__ == '__main__':
     LIB.setPreamble(WID, PREAMBLE.BLOCK_CODE, PREAMBLE.payload(),
                     len(PREAMBLE))
     try:
+#        for i in xrange(100000):
         while True:
             LIB.sendBlock(WID, BLOCK.BLOCK_CODE, BLOCK_BYTES, BLOCK_LEN)
             print '.',
