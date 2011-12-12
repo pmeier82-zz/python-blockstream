@@ -35,17 +35,8 @@
 
 """protocol for the sorting results with respect to the bxpd protocol"""
 __docformat__ = 'restructuredtext'
-
-
-##---ALL
-
-__all__ = [
-    # protocol classes
-    'BS3SortBlockHeader',
-    'BS3SortBaseBlock',
-    'BS3SortSetupBlock',
-    'BS3SortDataBlock',
-    ]
+__all__ = ['BS3SortBlockHeader', 'BS3SortBaseBlock', 'BS3SortSetupBlock',
+           'BS3SortDataBlock', ]
 
 
 ##---IMPORTS
@@ -53,6 +44,7 @@ __all__ = [
 from struct import pack, unpack, calcsize
 import scipy as sp
 from blockstream import BS3BaseHeader, BS3BaseBlock
+from bs_reader import ProtocolHandler
 
 
 ##---CLASSES
@@ -103,7 +95,7 @@ class BS3SortBaseBlock(BS3BaseBlock):
 class BS3SortSetupBlock(BS3SortBaseBlock):
     """"SORT - setupblock"""
 
-    def __init__(self, group_lst):
+    def __init__(self, group_lst, header=None):
         """
         :Paramters:
             group_lst : list
@@ -122,10 +114,12 @@ class BS3SortSetupBlock(BS3SortBaseBlock):
                         user1::uint16,
                         user2::uint16)
                     )
+            header : BS3SortBlockHeader
         """
 
         # super
-        super(BS3SortSetupBlock, self).__init__(BS3SortBlockHeader(0))
+        super(BS3SortSetupBlock, self).__init__(
+            header or BS3SortBlockHeader(0))
 
         # members
         self.group_lst = list(group_lst)
@@ -154,7 +148,7 @@ class BS3SortSetupBlock(BS3SortBaseBlock):
         return '%s::[gr:%d]' % (super_str, len(self.group_lst))
 
     @staticmethod
-    def from_data(header, data):
+    def from_data(data, header=None):
         """build from data"""
 
         if not isinstance(data, str):
@@ -193,13 +187,13 @@ class BS3SortSetupBlock(BS3SortBaseBlock):
                         at += 9
                         unit_lst.append((filt, temp, snr, active, u1, u2))
                 group_lst.append((grp_idx, nc, tf, cl, cov, unit_lst))
-        return BS3SortSetupBlock(header, group_lst)
+        return BS3SortSetupBlock(group_lst, header=header)
 
 
 class BS3SortDataBlock(BS3SortBaseBlock):
     """"SORT - datablock"""
 
-    def __init__(self, event_lst):
+    def __init__(self, event_lst, header=None):
         """
         :Paramters:
             event_lst : list
@@ -235,7 +229,7 @@ class BS3SortDataBlock(BS3SortBaseBlock):
         return '%s::[ev:%d]' % (super_str, len(self.event_lst))
 
     @staticmethod
-    def from_data(header, data):
+    def from_data( data, header=None):
         """build from data"""
 
         if not isinstance(data, str):
@@ -251,17 +245,35 @@ class BS3SortDataBlock(BS3SortBaseBlock):
                 ev = unpack('<HIQHHH', data[at:at + 20])
                 at += 20
                 event_lst.append(ev)
-        return BS3SortDataBlock(header, event_lst)
-
+        return BS3SortDataBlock(event_lst, header=header)
 
 ##---PROTOCOL
 
-PROT = {
-    'H': BS3SortBlockHeader,
-    'B': BS3SortBaseBlock,
-    0: BS3SortSetupBlock,
-    1: BS3SortDataBlock,
-    }
+class SORTProtocolHandler(ProtocolHandler):
+    PROTOCOL = 'SORT'
+
+    def on_block_ready(self, block_header, block_data):
+        if block_header.block_code == self.PROTOCOL:
+            at = BS3SortBlockHeader.__len__()
+            prot_header = BS3SortBlockHeader.from_data(block_data[:at])
+            prot_block = None
+            if prot_header.block_type == 0:
+                prot_block = BS3SortSetupBlock.from_data(block_data[at:])
+            elif prot_header.block_type == 1:
+                prot_block = BS3SortDataBlock.from_data(block_data[at:])
+            else:
+                print 'unknown block_code: %s::%s' % (
+                    block_header, prot_header)
+            return prot_block
+        else:
+            # other blocks -- what is wrong here?
+            print 'received block for other protocol! %s' % block_header
+            return None
+
+PROT = {'H': BS3SortBlockHeader,
+        'B': BS3SortBaseBlock,
+        0: BS3SortSetupBlock,
+        1: BS3SortDataBlock, }
 
 ##---MAIN
 

@@ -98,8 +98,7 @@ class BS3CoveBaseBlock(BS3BaseBlock):
 class BS3CoveDataBlock(BS3CoveBaseBlock):
     """"COVE - datablock"""
 
-    def __init__(self,
-                 data_lst):
+    def __init__(self, data_lst, header=None):
         """
         :Paramters:
             data_lst : list
@@ -109,10 +108,12 @@ class BS3CoveDataBlock(BS3CoveBaseBlock):
                 tf::uint16,
                 xcorrs::[nc*nc * 2*tf-1]
                 ncov::[tf*nc * tf*nc]
+            header : BS3CoveBlockHeader
         """
 
         # super
-        super(BS3CoveDataBlock, self).__init__(BS3CoveBlockHeader(0))
+        super(BS3CoveDataBlock, self).__init__(
+            header or BS3CoveBlockHeader(0))
 
         # members
         self.data_lst = list(data_lst)
@@ -135,7 +136,7 @@ class BS3CoveDataBlock(BS3CoveBaseBlock):
         return '%s::[%d]' % (super_str, self.data_lst[0])
 
     @staticmethod
-    def from_data(header, data):
+    def from_data(data, header=None):
         """build from data"""
 
         if not isinstance(data, str):
@@ -159,29 +160,34 @@ class BS3CoveDataBlock(BS3CoveBaseBlock):
         cov.shape = (tf_nc, tf_nc)
         data_lst.append(cov)
 
-        return BS3CoveDataBlock(header, data_lst)
+        return BS3CoveDataBlock(data_lst, header=header)
 
+##---PROTOCOLL
 
 class COVEProtocolHandler(ProtocolHandler):
+    PROTOCOL = 'COVE'
+
     def on_block_ready(self, block_header, block_data):
-        if block_header.block_code == 'COVE':
-            # handle our protocol
+        if block_header.block_code == self.PROTOCOL:
             at = BS3CoveBlockHeader.__len__()
-            cove_header = BS3CoveBlockHeader.from_data(block_data[:at])
-            cove_block = None
-            if cove_header.block_type == 0:
-                #data block
-                cove_block = BS3CoveDataBlock.from_data(cove_header,
-                                                        block_data[at:])
+            prot_header = BS3CoveBlockHeader.from_data(block_data[:at])
+            prot_block = None
+            if prot_header.block_type == 0:
+                prot_block = BS3CoveDataBlock.from_data(block_data[at:])
             else:
                 print 'unknown block_code: %s::%s' % (
-                    block_header, cove_header)
-            return cove_block
+                    block_header, prot_header)
+            return prot_block
         else:
             # other blocks -- what is wrong here?
             print 'received block for other protocol! %s' % block_header
             return None
 
+PROT = {'H': BS3CoveBlockHeader,
+        'B': BS3CoveBaseBlock,
+        0: BS3CoveDataBlock, }
+
+##---MAIN
 
 def test_single(n=100):
     try:
@@ -204,27 +210,26 @@ def test_single(n=100):
 
 
 def test_visualize():
-    indata = open("C:\\Dev\\blockstream_runtimes\\test_file1_res.cove",
+    indata = open('C:\\Dev\\blockstream_runtimes\\test_file1_res.cove',
                   'rb').read()
     bh = BS3CoveBlockHeader.from_data(indata[38:40])
     print bh.version, bh.block_type
     bk = BS3CoveDataBlock.from_data(bh, indata[40:])
     print bk.data_lst
 
-    from plot import P
+    from spikeplot import plt
 
-    P.matshow(bk.data_lst[-1])
-    P.show()
+    plt.matshow(bk.data_lst[-1])
+    plt.show()
 
 
 def test_visualize_block(block):
-    from plot import P
+    from spikeplot import plt
 
-    P.matshow(block.data_lst[-2])
-    P.matshow(block.data_lst[-1])
-    P.show()
-
-##---MAIN
+    plt.matshow(block.data_lst[-2])
+    plt.matshow(block.data_lst[-1])
+    plt.show()
 
 if __name__ == '__main__':
     test_single()
+    #test_visualize()

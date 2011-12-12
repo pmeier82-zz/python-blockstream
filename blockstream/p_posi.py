@@ -42,12 +42,13 @@ __all__ = [
     'BS3PosiSetupBlock',
     'BS3PosiDataBlock',
     'BS3PosiSteerBlock'
-    ]
+]
 
 ##---IMPORTS
 
 from struct import pack, unpack
 from blockstream import BS3BaseHeader, BS3BaseBlock
+from bs_reader import ProtocolHandler
 
 ##---CLASSES
 
@@ -98,17 +99,18 @@ class BS3PosiBaseBlock(BS3BaseBlock):
 class BS3PosiSetupBlock(BS3PosiBaseBlock):
     """"POSI - setupblock"""
 
-    def __init__(self,
-                 group_lst):
+    def __init__(self, group_lst, header=None):
         """
         :Paramters:
             group_lst : list
                 list of group specs. entry:
                     grp_idx::uint16
+            header : BS3PosiBlockHeader
         """
 
         # super
-        super(BS3PosiSetupBlock, self).__init__(BS3PosiBlockHeader(0))
+        super(BS3PosiSetupBlock, self).__init__(
+            header or BS3PosiBlockHeader(0))
 
         # members
         self.group_lst = list(group_lst)
@@ -152,18 +154,19 @@ class BS3PosiSetupBlock(BS3PosiBaseBlock):
 class BS3PosiDataBlock(BS3PosiBaseBlock):
     """"POSI - datablock"""
 
-    def __init__(self,
-                 grp_lst):
+    def __init__(self, grp_lst, header=None):
         """
         :Paramters:
             grp_lst : list
                 list of positions per group. entry:
                     (group_nr::uint16,
                      position::uint64)
+            header : BS3PosiBlockHeader
         """
 
         # super
-        super(BS3PosiDataBlock, self).__init__(BS3PosiBlockHeader(1))
+        super(BS3PosiDataBlock, self).__init__(
+            header or BS3PosiBlockHeader(1))
 
         # members
         self.grp_lst = list(grp_lst)
@@ -185,7 +188,7 @@ class BS3PosiDataBlock(BS3PosiBaseBlock):
         return '%s::[ev:%d]' % (super_str, len(self.grp_lst))
 
     @staticmethod
-    def from_data(header, data):
+    def from_data(data, header=None):
         """build from data"""
 
         if not isinstance(data, str):
@@ -201,24 +204,25 @@ class BS3PosiDataBlock(BS3PosiBaseBlock):
                 grp = unpack('<HQ', data[at:at + 10])
                 at += 10
                 grp_lst.append(grp)
-        return BS3PosiDataBlock(header, grp_lst)
+        return BS3PosiDataBlock(grp_lst, header=header)
 
 
 class BS3PosiSteerBlock(BS3PosiBaseBlock):
     """"POSI - steeringblock"""
 
-    def __init__(self,
-                 grp_lst):
+    def __init__(self, grp_lst, header=None):
         """
         :Paramters:
             grp_lst : list
                 list of positions per group. entry:
                     (group_nr::uint16,
                      position::uint64)
+            header : BS3PosiBlockHeader
         """
 
         # super
-        super(BS3PosiDataBlock, self).__init__(BS3PosiBlockHeader(2))
+        super(BS3PosiSteerBlock, self).__init__(
+            header or BS3PosiBlockHeader(2))
 
         # members
         self.grp_lst = list(grp_lst)
@@ -236,11 +240,11 @@ class BS3PosiSteerBlock(BS3PosiBaseBlock):
         return len(self.payload())
 
     def __str__(self):
-        super_str = super(BS3PosiDataBlock, self).__str__()
+        super_str = super(BS3PosiSteerBlock, self).__str__()
         return '%s::[ev:%d]' % (super_str, len(self.grp_lst))
 
     @staticmethod
-    def from_data(header, data):
+    def from_data(data, header=None):
         """build from data"""
 
         if not isinstance(data, str):
@@ -256,19 +260,38 @@ class BS3PosiSteerBlock(BS3PosiBaseBlock):
                 grp = unpack('<HQ', data[at:at + 10])
                 at += 10
                 grp_lst.append(grp)
-        return BS3PosiDataBlock(header, grp_lst)
-
+        return BS3PosiSteerBlock(grp_lst, header=header)
 
 ##---PROTOCOL
 
-PROT = {
-    'H':BS3PosiBlockHeader,
-    'B':BS3PosiBaseBlock,
-    0:BS3PosiSetupBlock,
-    1:BS3PosiDataBlock,
-    2:BS3PosiSteerBlock,
-    }
+class POSIProtocolHandler(ProtocolHandler):
+    PROTOCOL = 'POSI'
 
+    def on_block_ready(self, block_header, block_data):
+        if block_header.block_code == self.PROTOCOL:
+            at = BS3PosiBlockHeader.__len__()
+            prot_header = BS3PosiBlockHeader.from_data(block_data[:at])
+            prot_block = None
+            if prot_header.block_type == 0:
+                prot_block = BS3PosiSetupBlock.from_data(block_data[at:])
+            elif prot_header.block_type == 1:
+                prot_block = BS3PosiDataBlock.from_data(block_data[at:])
+            elif prot_header.block_type == 2:
+                prot_block = BS3PosiSteerBlock.from_data(block_data[at:])
+            else:
+                print 'unknown block_code: %s::%s' % (
+                    block_header, prot_header)
+            return prot_block
+        else:
+            # other blocks -- what is wrong here?
+            print 'received block for other protocol! %s' % block_header
+            return None
+
+PROT = {'H': BS3PosiBlockHeader,
+        'B': BS3PosiBaseBlock,
+        0: BS3PosiSetupBlock,
+        1: BS3PosiDataBlock,
+        2: BS3PosiSteerBlock,}
 
 ##---MAIN
 

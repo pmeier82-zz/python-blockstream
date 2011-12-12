@@ -70,7 +70,7 @@ except:
 
 ##---FUNCTIONS
 
-def load_blockstream(app_name):
+def load_blockstream(app_name='unknown!!'):
     """get a reference to the interpreter wide shared library handle"""
 
     global APPNAME, LIBHANDLE

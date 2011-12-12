@@ -38,7 +38,7 @@ __all__ = [
     'BS3WaveBlockHeader',
     'BS3WaveBaseBlock',
     'BS3WaveDataBlock',
-]
+    ]
 
 ##---IMPORTS
 
@@ -94,8 +94,7 @@ class BS3WaveBaseBlock(BS3BaseBlock):
 class BS3WaveDataBlock(BS3WaveBaseBlock):
     """"WAVE - datablock"""
 
-    def __init__(self,
-                 event_lst):
+    def __init__(self, event_lst, header=None):
         """
         :Paramters:
             event_lst : list
@@ -106,10 +105,12 @@ class BS3WaveDataBlock(BS3WaveBaseBlock):
                     nC::uint16,
                     nS::uint16,
                     samples::uint16[nS*nC]
+            header : BS3WaveBlockHeader
         """
 
         # super
-        super(BS3WaveDataBlock, self).__init__(BS3WaveBlockHeader(0))
+        super(BS3WaveDataBlock, self).__init__(
+            header or BS3WaveBlockHeader(0))
 
         # members
         self.event_lst = list(event_lst)
@@ -132,7 +133,7 @@ class BS3WaveDataBlock(BS3WaveBaseBlock):
         return '%s::[ev:%d]' % (super_str, len(self.event_lst))
 
     @staticmethod
-    def from_data(header, data):
+    def from_data(data, header=None):
         """build from data"""
 
         if not isinstance(data, str):
@@ -152,16 +153,33 @@ class BS3WaveDataBlock(BS3WaveBaseBlock):
                     dtype=sp.int16
                 ).reshape(ns, nc).T
                 event_lst.append((gid, uid, tv, nc, ns, wf))
-        return BS3WaveDataBlock(header, event_lst)
-
+        return BS3WaveDataBlock(event_lst, header=header)
 
 ##---PROTOCOL
 
-PROT = {
-    'H':BS3WaveBlockHeader,
-    'B':BS3WaveBaseBlock,
-    0:BS3WaveDataBlock,
-    }
+class SORTProtocolHandler(ProtocolHandler):
+    PROTOCOL = 'WAVE'
+
+    def on_block_ready(self, block_header, block_data):
+        if block_header.block_code == self.PROTOCOL:
+            at = BS3WaveBlockHeader.__len__()
+            prot_header = BS3WaveBlockHeader.from_data(block_data[:at])
+            prot_block = None
+            if prot_header.block_type == 0:
+                prot_block = BS3WaveDataBlock.from_data(block_data[at:])
+            else:
+                print 'unknown block_code: %s::%s' % (
+                    block_header, prot_header)
+            return prot_block
+        else:
+            # other blocks -- what is wrong here?
+            print 'received block for other protocol! %s' % block_header
+            return None
+
+
+PROT = {'H': BS3WaveBlockHeader,
+        'B': BS3WaveBaseBlock,
+        0: BS3WaveDataBlock, }
 
 ##---MAIN
 

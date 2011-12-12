@@ -30,7 +30,7 @@
 
 """reader thread handling single tetrode data management"""
 __docformat__ = 'restructuredtext'
-__all__ = ['BS3Reader','ProtocolHandler','USE_PROCESS','Queue']
+__all__ = ['BS3Reader', 'ProtocolHandler', 'USE_PROCESS', 'Queue']
 
 ##---IMPORTS
 
@@ -50,11 +50,14 @@ else:
 class ProtocolHandler(object):
     """abstract protocol _handler"""
 
+    PROTOCOL = '???'
+
     def _init__(self):
         pass
 
     def on_block_ready(self, block_header, block_data):
         """returns BS3BaseBlock"""
+
         pass
 
 
@@ -108,8 +111,8 @@ class BS3Reader(ParalellBase):
         """initialises the blockstream library for reading"""
 
         self._bs_lib = load_blockstream()
-        self._bs_lib.init()
-        self._reader_id = self._bs_lib.startReader(self._ident)
+        self._reader_id = self._bs_lib.startReader(
+            self._ident, self._protocol_handler_cls.PROTOCOL)
         if self._verbose:
             print 'reader id:', self._reader_id
 
@@ -120,6 +123,7 @@ class BS3Reader(ParalellBase):
             self._bs_lib.finalizeReader(self._reader_id)
             if self._verbose:
                 print 'finalized reader id:', self._reader_id
+            self._reader_id = None
 
     ## paralell interface
 
@@ -136,13 +140,14 @@ class BS3Reader(ParalellBase):
         if self._verbose:
             print 'starting doomsday loop'
         while self._is_serving.is_set():
-
             # mute toggle?
             if self._is_muted.is_set() != self._mute_state:
                 self._mute_state = not self._mute_state
-                self._bs_lib.setReaderActive(self._reader_id, not self._mute_state)
+                self._bs_lib.setReaderActive(self._reader_id,
+                                             not self._mute_state)
                 if self._verbose:
-                    print 'setReaderActive(%d,%s)' % (self._reader_id, not self._mute_state)
+                    print 'setReaderActive(%d,%s)' % (
+                        self._reader_id, not self._mute_state)
 
             # receive data by polling library
             i64_latency = c_int64()
@@ -156,10 +161,10 @@ class BS3Reader(ParalellBase):
 
             # handle data by building blocks
             if b_got_block:
-
                 # we received a block
                 if self._verbose:
-                    print 'incoming[%s][%s]' % (i64_latency.value, i64_blocksize.value)
+                    print 'incoming[%s][%s]' % (
+                        i64_latency.value, i64_blocksize.value)
                 if i64_blocksize.value < BS3DataBlockHeader.__len__():
                     raise BS3Error('bad block size!')
                 data = str(car_data[:i64_blocksize.value])
@@ -169,7 +174,8 @@ class BS3Reader(ParalellBase):
                 block_header = BS3DataBlockHeader.from_data(data[:at])
 
                 # call on block ready
-                protocol_block = self._handler.on_block_ready(block_header, data[at:])
+                protocol_block = self._handler.on_block_ready(block_header,
+                                                              data[at:])
                 if protocol_block is not None:
                     self._out_q.put((block_header, protocol_block))
                 else:
@@ -204,5 +210,4 @@ class BS3Reader(ParalellBase):
 ##---MAIN
 
 if __name__ == '__main__':
-
     pass
