@@ -1,6 +1,7 @@
 from blockstream import *
 from p_sort import *
 import scipy as sp
+import time
 
 TET = 1
 TF = 20
@@ -24,7 +25,7 @@ if __name__ == '__main__':
     print "returned: WID = LIB.startWriter('pyTestSortWriter', 'SORT')"
     PREAMBLE = BS3SortSetupBlock([
         [0, NC, TF, 0, sp.eye(TF * NC, dtype=sp.float32),
-            [(0, FILT, TEMP, 1.0, 1, 0, 0)]]
+            [(1, FILT, TEMP, 1.0, 1, 0, 0)]]
     ])
     LIB.setPreamble(WID, PREAMBLE.BLOCK_CODE, PREAMBLE.payload(),
                     len(PREAMBLE))
@@ -33,6 +34,7 @@ if __name__ == '__main__':
         while True:
             LIB.sendBlock(WID, BLOCK.BLOCK_CODE, BLOCK_BYTES, BLOCK_LEN)
             print '.',
+            time.sleep(0.5)
     except Exception, ex:
         print ex
     finally:

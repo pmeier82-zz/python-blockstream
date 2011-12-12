@@ -42,7 +42,7 @@ from p_posi import *
 from p_sort import *
 from p_wave import *
 
-__version__= '3.1.75'
+__version__= '3.1.80'
 
 
 ##---MAIN

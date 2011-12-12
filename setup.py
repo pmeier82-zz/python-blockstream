@@ -12,9 +12,9 @@
 ##---IMPORTS
 
 import ez_setup
+
 ez_setup.use_setuptools()
 from setuptools import setup, find_packages
-
 
 ##---STINGS
 
@@ -38,13 +38,23 @@ that is used as a transport proxy for other more specific protocols. The
 protocol lives in layer 5 and 6 of the OSI network model.
 """ % DESCRIPTION
 
+def get_version():
+    rval = '0.0.0'
+    with open('./blockstream/__init__.py', 'r') as f:
+        for line in f:
+            if line.startswith('__version__'):
+                rval = line.strip().split('=')[-1]
+                break
+    return rval.replace('\'','').strip()
+
+VERSION = get_version()
 
 ##---SETUP BLOCK
 
 setup(
     # names and description
     name='Blockstream',
-    version='1.4.0.1',
+    version=VERSION,
     author='Philipp Meier',
     author_email='pmeier82@googlemail.com',
     maintainer='Philipp Meier',
@@ -55,11 +65,11 @@ setup(
     # package distribution
     packages=['blockstream'],
 
-    package_data={'':['*.dll', '*.so', '*.ini']},
+    package_data={'': ['*.dll', '*.so', '*.ini']},
     zip_safe=False,
     include_package_data=True,
     license='free for non-commercial use',
     classifiers=CLASSIFIERS,
     platforms=['any'],
     install_requires=[],
-)
+    )
