@@ -35,14 +35,8 @@
 
 """protocol for the position information and steering of recoding devices"""
 __docformat__ = 'restructuredtext'
-__all__ = [
-    # protocol classes
-    'BS3PosiBlockHeader',
-    'BS3PosiBaseBlock',
-    'BS3PosiSetupBlock',
-    'BS3PosiDataBlock',
-    'BS3PosiSteerBlock'
-]
+__all__ = ['BS3PosiBlockHeader', 'BS3PosiBaseBlock', 'BS3PosiSetupBlock',
+           'BS3PosiDataBlock', 'BS3PosiSteerBlock', 'POSIProtocolHandler']
 
 ##---IMPORTS
 
@@ -291,7 +285,7 @@ PROT = {'H': BS3PosiBlockHeader,
         'B': BS3PosiBaseBlock,
         0: BS3PosiSetupBlock,
         1: BS3PosiDataBlock,
-        2: BS3PosiSteerBlock,}
+        2: BS3PosiSteerBlock, }
 
 ##---MAIN
 

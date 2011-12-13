@@ -35,13 +35,8 @@
 
 """protocol for the sorting results with respect to the bxpd protocol"""
 __docformat__ = 'restructuredtext'
-__all__ = [
-    # protocol classes
-    'BS3CoveBlockHeader',
-    'BS3CoveBaseBlock',
-    'BS3CoveDataBlock',
-    'COVEProtocolHandler',
-    ]
+__all__ = ['BS3CoveBlockHeader', 'BS3CoveBaseBlock', 'BS3CoveDataBlock',
+           'COVEProtocolHandler',]
 
 ##---IMPORTS
 

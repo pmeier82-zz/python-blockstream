@@ -30,14 +30,8 @@
 
 """protocol for the data of tetrodes"""
 __docformat__ = 'restructuredtext'
-__all__ = [
-    # protocol classes
-    'BS3BxpdBlockHeader',
-    'BS3BxpdBaseBlock',
-    'BS3BxpdSetupBlock',
-    'BS3BxpdDataBlock',
-    'BXPDProtocolHandler',
-    ]
+__all__ = ['BS3BxpdBlockHeader', 'BS3BxpdBaseBlock', 'BS3BxpdSetupBlock',
+           'BS3BxpdDataBlock', 'BXPDProtocolHandler',]
 
 
 ##---IMPORTS
@@ -398,7 +392,7 @@ class BXPDProtocolHandler(ProtocolHandler):
 PROT = {'H': BS3BxpdBlockHeader,
         'B': BS3BxpdBaseBlock,
         0: BS3BxpdSetupBlock,
-        1: BS3BxpdDataBlock,}
+        1: BS3BxpdDataBlock, }
 
 ##---MAIN
 

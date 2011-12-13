@@ -33,18 +33,15 @@
 
 """protocol for the waveforms"""
 __docformat__ = 'restructuredtext'
-__all__ = [
-    # protocol classes
-    'BS3WaveBlockHeader',
-    'BS3WaveBaseBlock',
-    'BS3WaveDataBlock',
-    ]
+__all__ = ['BS3WaveBlockHeader', 'BS3WaveBaseBlock', 'BS3WaveDataBlock',
+           'WAVEProtocolHandler']
 
 ##---IMPORTS
 
 from struct import pack, unpack
 import scipy as sp
 from blockstream import BS3BaseHeader, BS3BaseBlock
+from bs_reader import ProtocolHandler
 
 ##---CLASSES
 
@@ -151,13 +148,14 @@ class BS3WaveDataBlock(BS3WaveBaseBlock):
                 wf = sp.frombuffer(
                     data[at:at + ns * nc * 2],
                     dtype=sp.int16
-                ).reshape(ns, nc).T
+                ).reshape(nc, ns).T
+                at += ns * nc * 2
                 event_lst.append((gid, uid, tv, nc, ns, wf))
         return BS3WaveDataBlock(event_lst, header=header)
 
 ##---PROTOCOL
 
-class SORTProtocolHandler(ProtocolHandler):
+class WAVEProtocolHandler(ProtocolHandler):
     PROTOCOL = 'WAVE'
 
     def on_block_ready(self, block_header, block_data):

@@ -36,7 +36,7 @@
 """protocol for the sorting results with respect to the bxpd protocol"""
 __docformat__ = 'restructuredtext'
 __all__ = ['BS3SortBlockHeader', 'BS3SortBaseBlock', 'BS3SortSetupBlock',
-           'BS3SortDataBlock', ]
+           'BS3SortDataBlock', 'SORTProtocolHandler']
 
 
 ##---IMPORTS

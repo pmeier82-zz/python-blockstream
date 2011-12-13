@@ -30,7 +30,7 @@
 
 """reader thread handling single tetrode data management"""
 __docformat__ = 'restructuredtext'
-__all__ = ['BS3Reader', 'ProtocolHandler', 'USE_PROCESS', 'Queue']
+__all__ = ['BS3Reader', 'ProtocolHandler', 'USE_PROCESS', 'Queue', 'Empty']
 
 ##---IMPORTS
 
@@ -38,12 +38,14 @@ from ctypes import byref, c_int64, c_char, POINTER
 from blockstream import (load_blockstream, BS3Error, BS3DataBlockHeader)
 
 USE_PROCESS = False
+print 'USE_PROCESS', USE_PROCESS
 # paralell execution imports
 if USE_PROCESS is True:
     from multiprocessing import Process as ParalellBase, Queue, Event
 else:
     from threading import Thread as ParalellBase, Event
     from Queue import Queue
+from Queue import Empty
 
 ##---CLASSES
 
@@ -110,11 +112,12 @@ class BS3Reader(ParalellBase):
     def start_blockstream(self):
         """initialises the blockstream library for reading"""
 
-        self._bs_lib = load_blockstream()
+        self._bs_lib = load_blockstream(self._ident)
         self._reader_id = self._bs_lib.startReader(
             self._ident, self._protocol_handler_cls.PROTOCOL)
         if self._verbose:
             print 'reader id:', self._reader_id
+            print 'libhandle:', self._bs_lib
 
     def stop_blockstream(self):
         """frees the resources allocated from the library"""
@@ -125,7 +128,7 @@ class BS3Reader(ParalellBase):
                 print 'finalized reader id:', self._reader_id
             self._reader_id = None
 
-    ## paralell interface
+    ## parallel interface
 
     def run(self):
         """polls for new data and relays to self._out_q"""
@@ -153,6 +156,11 @@ class BS3Reader(ParalellBase):
             i64_latency = c_int64()
             i64_blocksize = c_int64()
             car_data = POINTER(c_char)()
+            # bool readBlock(const int16 readerID,
+            #                int64* latency
+            #                int64* blockSize,
+            #                const void** data,
+            #                int16 timeout);
             b_got_block = self._bs_lib.readBlock(self._reader_id,
                                                  byref(i64_latency),
                                                  byref(i64_blocksize),
@@ -177,7 +185,7 @@ class BS3Reader(ParalellBase):
                 protocol_block = self._handler.on_block_ready(block_header,
                                                               data[at:])
                 if protocol_block is not None:
-                    self._out_q.put((block_header, protocol_block))
+                    self._out_q.put(protocol_block)
                 else:
                     if self._verbose:
                         print 'no push of bad block'
