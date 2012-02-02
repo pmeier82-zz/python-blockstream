@@ -13,9 +13,11 @@
 #   Tel: +49-30-314 26756
 #
 # Date: 2011-02-25
-# Copyright (c) 2011 Philipp Meier, Felix Franke & Technische Universität Berlin
+# Copyright (c) 2011 Philipp Meier, Felix Franke & Technische Universität
+# Berlin
 # Acknowledgement: This work was supported by Deutsche Forschungs Gemeinschaft
-#                  (DFG) with grant GRK 1589/1 and Bundesministerium für Bildung
+#                  (DFG) with grant GRK 1589/1 and Bundesministerium für
+# Bildung
 #                  und Forschung (BMBF) with grants 01GQ0743 and 01GQ0410.
 #
 #______________________________________________________________________________
@@ -23,22 +25,22 @@
 # This is free software; you can redistribute it and/or modify it under the
 # terms of version 1.1 of the EUPL, European Union Public Licence.
 # The software is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS
 # FOR A PARTICULAR PURPOSE. See the EUPL for more details.
 #______________________________________________________________________________
 #
 
 """reader thread handling single tetrode data management"""
 __docformat__ = 'restructuredtext'
-__all__ = ['BS3Reader', 'ProtocolHandler', 'USE_PROCESS', 'Queue', 'Empty']
+__all__ = ['BS3Reader', 'ProtocolHandler', 'Queue', 'Empty']
 
 ##---IMPORTS
 
 from ctypes import byref, c_int64, c_char, POINTER
-from blockstream import (load_blockstream, BS3Error, BS3DataBlockHeader)
+from blockstream import (load_blockstream, BS3Error, BS3DataBlockHeader,
+                         USE_PROCESS)
 
-USE_PROCESS = False
-print 'USE_PROCESS', USE_PROCESS
 # paralell execution imports
 if USE_PROCESS is True:
     from multiprocessing import Process as ParalellBase, Queue, Event
@@ -213,7 +215,6 @@ class BS3Reader(ParalellBase):
             self._is_muted.set()
         else:
             self._is_muted.clear()
-
 
 ##---MAIN
 
