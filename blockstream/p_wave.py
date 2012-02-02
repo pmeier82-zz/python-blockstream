@@ -33,7 +33,7 @@
 
 """protocol for the waveforms"""
 __docformat__ = 'restructuredtext'
-__all__ = ['BS3WaveBlockHeader', 'BS3WaveBaseBlock', 'BS3WaveDataBlock',
+__all__ = ['BS3WaveBlockHeader', 'BS3WaveBaseBlock', 'BS3WaveSetupBlock', 'BS3WaveDataBlock',
            'WAVEProtocolHandler']
 
 ##---IMPORTS
@@ -76,7 +76,7 @@ class BS3WaveBlockHeader(BS3BaseHeader):
             raise ValueError(
                 'data must have len >= %s' % BS3WaveBlockHeader.__len__())
         ver, btp = unpack(BS3WaveBlockHeader.signature,
-                          data[:BS3WaveBlockHeader.__len__()])
+            data[:BS3WaveBlockHeader.__len__()])
         if ver != BS3WaveBlockHeader.version:
             raise ValueError('invalid protocol version(%s)!' % ver)
         return BS3WaveBlockHeader(btp)
@@ -86,6 +86,66 @@ class BS3WaveBaseBlock(BS3BaseBlock):
     """"Sort data block"""
 
     BLOCK_CODE = 'WAVE'
+
+
+class BS3WaveSetupBlock(BS3WaveBaseBlock):
+    """"WAVE - Setupblock"""
+
+    def __init__(self, setup_lst, header=None):
+        """
+        :Paramters:
+            setup_lst : list
+                list of waveform channel setup:
+                    group_idx::uint16,
+                    channelNumber::uint16,
+                    sampleCount::uint16,
+                    sampleRate::double,
+                    variance::double,
+                    mean::double
+            header : BS3WaveBlockHeader
+        """
+
+        # super
+        super(BS3WaveSetupBlock, self).__init__(
+            header or BS3WaveBlockHeader(0))
+
+        # members
+        self.setup_lst = list(setup_lst)
+
+    def payload(self):
+        rval = ''
+        rval += self.header.payload()
+        rval += pack('<I', len(self.setup_lst))
+        if len(self.setup_lst) > 0:
+            for set in self.setup_lst:
+                rval += pack('<HHHddd', *set)
+        return rval
+
+    def __len__(self):
+        return len(self.payload())
+
+    def __str__(self):
+        super_str = super(BS3WaveSetupBlock, self).__str__()
+        return '%s::[set:%d]' % (super_str, len(self.setup_lst))
+
+    @staticmethod
+    def from_data(data, header=None):
+        """build from data"""
+
+        if not isinstance(data, str):
+            raise TypeError('needs a sting as input!')
+        at = 0
+
+        # events
+        setup_lst = []
+        nevent, = unpack('<I', data[at:at + 4])
+        at += 4
+        if nevent > 0:
+            for _ in xrange(nevent):
+                gid, chid, ns, sr, vr, m = unpack('<HHHddd', data[at:at + 30])
+                at += 30
+                setup_lst.append((gid, chid, ns, sr, vr, m))
+        return BS3WaveSetupBlock(setup_lst, header=header)
 
 
 class BS3WaveDataBlock(BS3WaveBaseBlock):
@@ -164,6 +224,8 @@ class WAVEProtocolHandler(ProtocolHandler):
             prot_header = BS3WaveBlockHeader.from_data(block_data[:at])
             prot_block = None
             if prot_header.block_type == 0:
+                prot_block = BS3WaveSetupBlock.from_data(block_data[at:])
+            elif prot_header.block_type == 1:
                 prot_block = BS3WaveDataBlock.from_data(block_data[at:])
             else:
                 print 'unknown block_code: %s::%s' % (
@@ -177,7 +239,8 @@ class WAVEProtocolHandler(ProtocolHandler):
 
 PROT = {'H': BS3WaveBlockHeader,
         'B': BS3WaveBaseBlock,
-        0: BS3WaveDataBlock, }
+        0: BS3WaveSetupBlock,
+        1: BS3WaveDataBlock, }
 
 ##---MAIN
 
