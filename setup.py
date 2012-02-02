@@ -45,7 +45,7 @@ def get_version():
             if line.startswith('__version__'):
                 rval = line.strip().split('=')[-1]
                 break
-    return rval.replace('\'','').strip()
+    return rval.replace('\'', '').strip()
 
 VERSION = get_version()
 
@@ -64,8 +64,7 @@ setup(
     long_description=LONG_DESCRIPTION,
     # package distribution
     packages=['blockstream'],
-
-    package_data={'': ['*.dll', '*.so', '*.ini']},
+    package_data={'':['*.dll', '*.so', '*.ini']},
     zip_safe=False,
     include_package_data=True,
     license='free for non-commercial use',
