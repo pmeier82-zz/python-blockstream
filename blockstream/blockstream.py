@@ -36,13 +36,12 @@
 """ctypes binding for the blockstream shared library"""
 __docformat__ = 'restructuredtext'
 __all__ = ['load_blockstream', 'get_appname', 'BS3Error', 'BS3BaseHeader',
-           'BS3DataBlockHeader', 'BS3BaseBlock', ]
+           'BS3DataBlockHeader', 'BS3BaseBlock', 'USE_PROCESS']
 
 ##---IMPORTS
 
 import os
 import platform
-import time
 from ctypes import CDLL
 from struct import pack, unpack, calcsize
 from ConfigParser import ConfigParser
@@ -53,6 +52,7 @@ APPNAME = None
 CONTROL_PORT = 15000
 try:
     LIBHANDLE
+    USE_PROCESS
 except:
     lib_name = 'libBlockStream.so'
     if platform.system() == 'Windows':
@@ -60,6 +60,7 @@ except:
     cfg = ConfigParser()
     cfg.read(os.path.join(os.path.dirname(__file__), 'blockstream.ini'))
     lib_dir = cfg.get('library', 'libdir')
+    USE_PROCESS = cfg.getboolean('parallel', 'use_process')
     target = os.path.join(lib_dir, lib_name)
     print 'looking for:', target
     os.chdir(lib_dir)
@@ -201,7 +202,6 @@ class BS3BaseBlock(object):
 
     def __str__(self):
         return '%s' % self.header
-
 
 ##---MAIN
 
